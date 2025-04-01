@@ -1,0 +1,4 @@
+name: koster-common
+build:
+  cmake: .
+  kconfig: Kconfig
