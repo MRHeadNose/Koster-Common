@@ -16,6 +16,18 @@ LOG_MODULE_REGISTER(koster_common);
 
 static struct settings_handler handler_;
 
+struct recipe_t {
+    uint8_t id;
+    char name[RECIPE_NAME_MAX_SIZE];
+    recipe_type_t type;
+    uint16_t flash_off_time[RECIPE_MAX_FLASHOFF_TIMERS];   // Flash-off time (seconds)
+    uint8_t flash_off_power[RECIPE_MAX_FLASHOFF_TIMERS];   // Flash-off power (percent)
+    uint16_t hardening_time[RECIPE_MAX_HARDENING_TIMERS];  // Flash-on time (seconds)
+    uint8_t hardening_rise[RECIPE_MAX_HARDENING_TIMERS];   // Flash-on temperature rise (celsius per minute)
+    uint16_t hardening_temp[RECIPE_MAX_HARDENING_TIMERS];  // Flash-on end temperature (celsius)
+    uint16_t uv_time;                                      // UV time (seconds)
+};
+
 struct recipes_t {
     size_t n_recipes;
     struct recipe_t recipes[RECIPE_MAX_RECIPES];
@@ -25,56 +37,26 @@ static const struct recipe_t kDefaultRecipe0 = {
         .id = 0,
         .name = "recipe 0",
         .type = kRecipeIR,
-        .flash_off_t1_time = 240,
-        .flash_off_t1_power = 20,
-        .flash_off_t2_time = 300,
-        .flash_off_t2_power = 70,
-        .hardening_t1_time = 240,
-        .hardening_t1_rise = 15,
-        .hardening_t1_temp = 80,
-        .hardening_t2_time = 300,
-        .hardening_t2_rise = 25,
-        .hardening_t2_temp = 180,
-        .hardening_t3_time = 0,
-        .hardening_t3_rise = 0,
-        .hardening_t3_temp = 0,
+        .flash_off_time = {240, 300},
+        .flash_off_power = {20, 70},
+        .hardening_time = {240, 300, 0},
+        .hardening_rise = {15, 25, 0},
+        .hardening_temp = {80, 180, 0},
         .uv_time = 0,
 };
 static const struct recipe_t kDefaultRecipe1 = {
         .id = 1,
         .name = "recipe 1",
         .type = kRecipeUV,
-        .flash_off_t1_time = 0,
-        .flash_off_t1_power = 0,
-        .flash_off_t2_time = 0,
-        .flash_off_t2_power = 0,
-        .hardening_t1_time = 0,
-        .hardening_t1_rise = 0,
-        .hardening_t1_temp = 0,
-        .hardening_t2_time = 0,
-        .hardening_t2_rise = 0,
-        .hardening_t2_temp = 0,
-        .hardening_t3_time = 0,
-        .hardening_t3_rise = 0,
-        .hardening_t3_temp = 0,
+        .flash_off_time = {0},
+        .flash_off_power = {0},
+        .hardening_time = {0},
+        .hardening_rise = {0},
+        .hardening_temp = {0},
         .uv_time = 200,
 };
 
 static struct recipes_t recipes_;
-
-/* static int handle_get(const char *name, char *val, int val_len_max) { */
-/*     LOG_INF("[recipe] handle_get: name = %s, val_len_max = %i", name, val_len_max); */
-/*     const char *next; */
-
-/*     if (settings_name_steq(name, "recipes", &next) && !next) { */
-/*         LOG_INF("[recipe] handle_get: next = %s", next); */
-/*         val_len_max = MIN(val_len_max, sizeof(recipes_)); */
-/*         memcpy(val, &recipes_, val_len_max); */
-/*         return val_len_max; */
-/*     } */
-
-/*     return -1; */
-/* } */
 
 static int handle_set(const char *name, size_t len, settings_read_cb read_cb, void *cb_arg) {
     const char *next;
@@ -185,4 +167,126 @@ int RecipePersist() {
         LOG_ERR("[recipe] settings_save_one failed (err %d)", rc);
     }
     return rc;
+}
+
+int RecipeSetName(struct recipe_t *recipe, const char *name) {
+    if (recipe != NULL) {
+        strncpy(recipe->name, name, RECIPE_NAME_MAX_SIZE);
+        return 0;
+    }
+    return -1;
+}
+
+int RecipeSetType(struct recipe_t *recipe, const recipe_type_t type) {
+    if (recipe != NULL && type > 0 && type < kRecipeNTypes) {
+        recipe->type = type;
+        return 0;
+    }
+    return -1;
+}
+
+int RecipeSetFlashOffTime(struct recipe_t *recipe, const uint8_t timer_number, const uint16_t seconds) {
+    if (recipe != NULL && timer_number < RECIPE_MAX_FLASHOFF_TIMERS) {
+        recipe->flash_off_time[timer_number] = seconds;
+        return 0;
+    }
+    return -1;
+}
+
+int RecipeSetFlashOffPower(struct recipe_t *recipe, const uint8_t timer_number, const uint8_t pct) {
+    if (recipe != NULL && timer_number < RECIPE_MAX_FLASHOFF_TIMERS && pct <= 100) {
+        recipe->flash_off_power[timer_number] = pct;
+        return 0;
+    }
+    return -1;
+}
+
+int RecipeSetHardeningTime(struct recipe_t *recipe, const uint8_t timer_number, const uint16_t seconds) {
+    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
+        recipe->hardening_time[timer_number] = seconds;
+        return 0;
+    }
+    return -1;
+}
+
+int RecipeSetHardeningRise(struct recipe_t *recipe, const uint8_t timer_number, const uint8_t c_per_min) {
+    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
+        recipe->hardening_rise[timer_number] = c_per_min;
+        return 0;
+    }
+    return -1;
+}
+
+int RecipeSetHardeningTemp(struct recipe_t *recipe, const uint8_t timer_number, const uint16_t celsius) {
+    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
+        recipe->hardening_temp[timer_number] = celsius;
+        return 0;
+    }
+    return -1;
+}
+
+int RecipeSetUVTime(struct recipe_t *recipe, const uint16_t seconds) {
+    if (recipe != NULL) {
+        recipe->uv_time = seconds;
+        return 0;
+    }
+    return -1;
+}
+
+int RecipeGetName(const struct recipe_t *recipe, char *buf, size_t bufsz) {
+    if (recipe != NULL) {
+        bufsz = MIN(bufsz, RECIPE_NAME_MAX_SIZE);
+        strncpy(buf, recipe->name, bufsz);
+        return 0;
+    }
+    return -1;
+}
+
+recipe_type_t RecipeGetType(const struct recipe_t *recipe) {
+    if (recipe != NULL) {
+        return recipe->type;
+    }
+    return kRecipeNTypes;
+}
+
+uint16_t RecipeGetFlashOffTime(const struct recipe_t *recipe, const uint8_t timer_number) {
+    if (recipe != NULL && timer_number < RECIPE_MAX_FLASHOFF_TIMERS) {
+        return recipe->flash_off_time[timer_number];
+    }
+    return 0;
+}
+
+uint8_t RecipeGetFlashOffPower(const struct recipe_t *recipe, const uint8_t timer_number) {
+    if (recipe != NULL && timer_number < RECIPE_MAX_FLASHOFF_TIMERS) {
+        return recipe->flash_off_power[timer_number];
+    }
+    return 0;
+}
+
+uint16_t RecipeGetHardeningTime(const struct recipe_t *recipe, const uint8_t timer_number) {
+    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
+        return recipe->hardening_time[timer_number];
+    }
+    return 0;
+}
+
+uint8_t RecipeGetHardeningRise(const struct recipe_t *recipe, const uint8_t timer_number) {
+    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
+        return recipe->hardening_rise[timer_number];
+    }
+    return 0;
+}
+
+uint16_t RecipeGetHardeningTemp(const struct recipe_t *recipe, const uint8_t timer_number) {
+    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
+        return recipe->hardening_temp[timer_number];
+    }
+    return 0;
+}
+
+uint16_t RecipeGetUVTime(const struct recipe_t *recipe) {
+    if (recipe != NULL) {
+        return recipe->uv_time;
+    }
+    return 0;
 }
