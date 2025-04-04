@@ -13,6 +13,7 @@ LOG_MODULE_REGISTER(koster_common);
 #define STORAGE_PARTITION storage_partition
 #define STORAGE_PARTITION_ID FIXED_PARTITION_ID(STORAGE_PARTITION)
 #define RECIPIES_SETTING "koster_common/recipes"
+#define RECIPE_NO_ID 255
 
 static struct settings_handler handler_;
 
@@ -20,12 +21,12 @@ struct recipe_t {
     uint8_t id;
     char name[RECIPE_NAME_MAX_SIZE];
     recipe_type_t type;
-    uint16_t flash_off_time[RECIPE_MAX_FLASHOFF_TIMERS];   // Flash-off time (seconds)
-    uint8_t flash_off_power[RECIPE_MAX_FLASHOFF_TIMERS];   // Flash-off power (percent)
-    uint16_t hardening_time[RECIPE_MAX_HARDENING_TIMERS];  // Flash-on time (seconds)
-    uint8_t hardening_rise[RECIPE_MAX_HARDENING_TIMERS];   // Flash-on temperature rise (celsius per minute)
-    uint16_t hardening_temp[RECIPE_MAX_HARDENING_TIMERS];  // Flash-on end temperature (celsius)
-    uint16_t uv_time;                                      // UV time (seconds)
+    uint16_t pyro_off_time[RECIPE_MAX_PYRO_OFF_TIMERS];  // pyro-off time (seconds)
+    uint8_t pyro_off_power[RECIPE_MAX_PYRO_OFF_TIMERS];  // pyro-off power (percent)
+    uint16_t pyro_on_time[RECIPE_MAX_PYRO_ON_TIMERS];    // pyro-on time (seconds)
+    uint8_t pyro_on_rise[RECIPE_MAX_PYRO_ON_TIMERS];     // pyro-on temperature rise (celsius per minute)
+    uint16_t pyro_on_temp[RECIPE_MAX_PYRO_ON_TIMERS];    // pyro-on end temperature (celsius)
+    uint16_t uv_time;                                    // UV time (seconds)
 };
 
 struct recipes_t {
@@ -37,25 +38,27 @@ static const struct recipe_t kDefaultRecipe0 = {
         .id = 0,
         .name = "recipe 0",
         .type = kRecipeIR,
-        .flash_off_time = {240, 300},
-        .flash_off_power = {20, 70},
-        .hardening_time = {240, 300, 0},
-        .hardening_rise = {15, 25, 0},
-        .hardening_temp = {80, 180, 0},
+        .pyro_off_time = {240, 300},
+        .pyro_off_power = {20, 70},
+        .pyro_on_time = {240, 300, 0},
+        .pyro_on_rise = {15, 25, 0},
+        .pyro_on_temp = {80, 180, 0},
         .uv_time = 0,
 };
 static const struct recipe_t kDefaultRecipe1 = {
         .id = 1,
         .name = "recipe 1",
         .type = kRecipeUV,
-        .flash_off_time = {0},
-        .flash_off_power = {0},
-        .hardening_time = {0},
-        .hardening_rise = {0},
-        .hardening_temp = {0},
+        .pyro_off_time = {0},
+        .pyro_off_power = {0},
+        .pyro_on_time = {0},
+        .pyro_on_rise = {0},
+        .pyro_on_temp = {0},
         .uv_time = 200,
 };
 
+K_MUTEX_DEFINE(recipes_mutex);
+#define RECIPES_MUTEX_TIMEOUT 100
 static struct recipes_t recipes_;
 
 static int handle_set(const char *name, size_t len, settings_read_cb read_cb, void *cb_arg) {
@@ -65,14 +68,18 @@ static int handle_set(const char *name, size_t len, settings_read_cb read_cb, vo
     name_len = settings_name_next(name, &next);
 
     if (!strncmp(name, "recipes", name_len)) {
-        if (len != sizeof(recipes_)) {
+        if (len != sizeof(struct recipes_t)) {
             LOG_ERR("[recipe] handle_set: read size different from size of recipes");
             return -EINVAL;
         }
 
-        int rc = read_cb(cb_arg, &recipes_, sizeof(recipes_));
-        if (rc >= 0) {
-            return 0;
+        int rc = -EBUSY;
+        if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+            rc = read_cb(cb_arg, &recipes_, sizeof(recipes_));
+            k_mutex_unlock(&recipes_mutex);
+            if (rc >= 0) {
+                return 0;
+            }
         }
 
         return rc;
@@ -82,7 +89,12 @@ static int handle_set(const char *name, size_t len, settings_read_cb read_cb, vo
 }
 
 static int handle_export(int (*storage_func)(const char *name, const void *value, size_t val_len)) {
-    return storage_func(RECIPIES_SETTING, &recipes_, sizeof(recipes_));
+    int ret = -EBUSY;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        ret = storage_func(RECIPIES_SETTING, &recipes_, sizeof(recipes_));
+        k_mutex_unlock(&recipes_mutex);
+    }
+    return ret;
 }
 
 int RecipeInit() {
@@ -126,167 +138,311 @@ int RecipeInit() {
         return -1;
     }
 
-    if (recipes_.n_recipes == 0) {
-        LOG_INF("[recipe] No recipes found. Adding default recipes.");
-        recipes_.n_recipes = 2;
-        recipes_.recipes[0] = kDefaultRecipe0;
-        recipes_.recipes[1] = kDefaultRecipe1;
-    } else {
-        LOG_INF("[recipe] Loaded %i recipes.", recipes_.n_recipes);
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipes_.n_recipes == 0) {
+            LOG_INF("[recipe] No recipes found. Adding default recipes.");
+            recipes_.n_recipes = 2;
+            recipes_.recipes[0] = kDefaultRecipe0;
+            recipes_.recipes[1] = kDefaultRecipe1;
+            RecipePersist();
+        } else {
+            LOG_INF("[recipe] Loaded %i recipes.", recipes_.n_recipes);
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
 
     return 0;
 }
 
-int RecipeGet(struct recipe_t *recipe, const uint8_t id) {
-    if (id < recipes_.n_recipes) {
-        (*recipe) = recipes_.recipes[id];
-        return 0;
+int RecipeGet(struct recipe_t **recipe, const uint8_t id) {
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (id < recipes_.n_recipes) {
+            *recipe = &recipes_.recipes[id];
+            rc = 0;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return -1;
+    return rc;
+}
+
+int RecipeNew(struct recipe_t **recipe) {
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipes_.n_recipes < RECIPE_MAX_RECIPES - 1) {
+            for (int i = 0; i < RECIPE_MAX_PYRO_OFF_TIMERS; ++i) {
+                recipes_.recipes[recipes_.n_recipes].pyro_off_time[i] = 0;
+                recipes_.recipes[recipes_.n_recipes].pyro_off_power[i] = 0;
+            }
+            for (int i = 0; i < RECIPE_MAX_PYRO_ON_TIMERS; ++i) {
+                recipes_.recipes[recipes_.n_recipes].pyro_on_rise[i] = 0;
+                recipes_.recipes[recipes_.n_recipes].pyro_on_time[i] = 0;
+                recipes_.recipes[recipes_.n_recipes].pyro_on_rise[i] = 0;
+            }
+            recipes_.recipes[recipes_.n_recipes].uv_time = 0;
+            recipes_.recipes[recipes_.n_recipes].id = recipes_.n_recipes;
+            recipes_.recipes[recipes_.n_recipes].type = kRecipeIR;
+
+            *recipe = &recipes_.recipes[recipes_.n_recipes];
+            ++recipes_.n_recipes;
+            rc = 0;
+        }
+        k_mutex_unlock(&recipes_mutex);
+    }
+    return rc;
+}
+
+int RecipeDelete(struct recipe_t *recipe) {
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        // zero all fields
+        for (int i = 0; i < RECIPE_MAX_PYRO_OFF_TIMERS; ++i) {
+            recipe->pyro_off_time[i] = 0;
+            recipe->pyro_off_power[i] = 0;
+        }
+        for (int i = 0; i < RECIPE_MAX_PYRO_ON_TIMERS; ++i) {
+            recipe->pyro_on_rise[i] = 0;
+            recipe->pyro_on_time[i] = 0;
+            recipe->pyro_on_rise[i] = 0;
+        }
+        recipe->uv_time = 0;
+        recipe->id = RECIPE_NO_ID;
+        recipe->type = 0;
+
+        // repack the struct
+        for (int i = 0; i < recipes_.n_recipes - 1; ++i) {
+            if (recipes_.recipes[i].id == RECIPE_NO_ID) {
+                recipes_.recipes[i] = recipes_.recipes[i + 1];
+            }
+        }
+
+        k_mutex_unlock(&recipes_mutex);
+    }
+    return rc;
+}
+
+uint8_t RecipeGetNRecipes() {
+    uint8_t n_recipes = 0;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        n_recipes = recipes_.n_recipes;
+        k_mutex_unlock(&recipes_mutex);
+    }
+    return n_recipes;
 }
 
 int RecipeSave(const struct recipe_t *recipe) {
-    if (recipe->id < recipes_.n_recipes) {
-        recipes_.recipes[recipe->id] = *recipe;
-        return 0;
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe->id < recipes_.n_recipes) {
+            recipes_.recipes[recipe->id] = *recipe;
+            rc = 0;
+        } else if (recipe->id == recipes_.n_recipes) {
+            ++recipes_.n_recipes;
+            recipes_.recipes[recipe->id] = *recipe;
+            rc = 0;
+        } else {
+            LOG_ERR("[recipe] RecipeSave: Recipe ID does not exist and is not the next available.");
+            rc = -1;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    if (recipe->id == recipes_.n_recipes) {
-        ++recipes_.n_recipes;
-        recipes_.recipes[recipe->id] = *recipe;
-        return 0;
-    } else {
-        LOG_ERR("[recipe] RecipeSave: Recipe ID does not exist and is not the next available.");
-        return -1;
-    }
+    return rc;
 }
 
 int RecipePersist() {
-    int rc = settings_save_one(RECIPIES_SETTING, &recipes_, sizeof(recipes_));
-    if (rc != 0) {
-        LOG_ERR("[recipe] settings_save_one failed (err %d)", rc);
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        rc = settings_save_one(RECIPIES_SETTING, &recipes_, sizeof(recipes_));
+        if (rc != 0) {
+            LOG_ERR("[recipe] settings_save_one failed (err %d)", rc);
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
     return rc;
 }
 
 int RecipeSetName(struct recipe_t *recipe, const char *name) {
-    if (recipe != NULL) {
-        strncpy(recipe->name, name, RECIPE_NAME_MAX_SIZE);
-        return 0;
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL) {
+            strncpy(recipe->name, name, RECIPE_NAME_MAX_SIZE);
+            rc = 0;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return -1;
+    return rc;
 }
 
 int RecipeSetType(struct recipe_t *recipe, const recipe_type_t type) {
-    if (recipe != NULL && type > 0 && type < kRecipeNTypes) {
-        recipe->type = type;
-        return 0;
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL && type >= 0 && type < kRecipeNTypes) {
+            recipe->type = type;
+            rc = 0;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return -1;
+    return rc;
 }
 
-int RecipeSetFlashOffTime(struct recipe_t *recipe, const uint8_t timer_number, const uint16_t seconds) {
-    if (recipe != NULL && timer_number < RECIPE_MAX_FLASHOFF_TIMERS) {
-        recipe->flash_off_time[timer_number] = seconds;
-        return 0;
+int RecipeSetPyroOffTime(struct recipe_t *recipe, const uint8_t timer_number, const uint16_t seconds) {
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL && timer_number < RECIPE_MAX_PYRO_OFF_TIMERS) {
+            recipe->pyro_off_time[timer_number] = seconds;
+            rc = 0;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return -1;
+    return rc;
 }
 
-int RecipeSetFlashOffPower(struct recipe_t *recipe, const uint8_t timer_number, const uint8_t pct) {
-    if (recipe != NULL && timer_number < RECIPE_MAX_FLASHOFF_TIMERS && pct <= 100) {
-        recipe->flash_off_power[timer_number] = pct;
-        return 0;
+int RecipeSetPyroOffPower(struct recipe_t *recipe, const uint8_t timer_number, const uint8_t pct) {
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL && timer_number < RECIPE_MAX_PYRO_OFF_TIMERS && pct <= 100) {
+            recipe->pyro_off_power[timer_number] = pct;
+            rc = 0;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return -1;
+    return rc;
 }
 
-int RecipeSetHardeningTime(struct recipe_t *recipe, const uint8_t timer_number, const uint16_t seconds) {
-    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
-        recipe->hardening_time[timer_number] = seconds;
-        return 0;
+int RecipeSetPyroOnTime(struct recipe_t *recipe, const uint8_t timer_number, const uint16_t seconds) {
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL && timer_number < RECIPE_MAX_PYRO_ON_TIMERS) {
+            recipe->pyro_on_time[timer_number] = seconds;
+            rc = 0;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return -1;
+    return rc;
 }
 
-int RecipeSetHardeningRise(struct recipe_t *recipe, const uint8_t timer_number, const uint8_t c_per_min) {
-    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
-        recipe->hardening_rise[timer_number] = c_per_min;
-        return 0;
+int RecipeSetPyroOnRise(struct recipe_t *recipe, const uint8_t timer_number, const uint8_t c_per_min) {
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL && timer_number < RECIPE_MAX_PYRO_ON_TIMERS) {
+            recipe->pyro_on_rise[timer_number] = c_per_min;
+            rc = 0;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return -1;
+    return rc;
 }
 
-int RecipeSetHardeningTemp(struct recipe_t *recipe, const uint8_t timer_number, const uint16_t celsius) {
-    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
-        recipe->hardening_temp[timer_number] = celsius;
-        return 0;
+int RecipeSetPyroOnTemp(struct recipe_t *recipe, const uint8_t timer_number, const uint16_t celsius) {
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL && timer_number < RECIPE_MAX_PYRO_ON_TIMERS) {
+            recipe->pyro_on_temp[timer_number] = celsius;
+            rc = 0;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return -1;
+    return rc;
 }
 
 int RecipeSetUVTime(struct recipe_t *recipe, const uint16_t seconds) {
-    if (recipe != NULL) {
-        recipe->uv_time = seconds;
-        return 0;
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL) {
+            recipe->uv_time = seconds;
+            rc = 0;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return -1;
+    return rc;
 }
 
 int RecipeGetName(const struct recipe_t *recipe, char *buf, size_t bufsz) {
-    if (recipe != NULL) {
-        bufsz = MIN(bufsz, RECIPE_NAME_MAX_SIZE);
-        strncpy(buf, recipe->name, bufsz);
-        return 0;
+    int rc = -1;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL) {
+            bufsz = MIN(bufsz, RECIPE_NAME_MAX_SIZE);
+            strncpy(buf, recipe->name, bufsz);
+            rc = 0;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return -1;
+    return rc;
 }
 
 recipe_type_t RecipeGetType(const struct recipe_t *recipe) {
-    if (recipe != NULL) {
-        return recipe->type;
+    recipe_type_t ret_val = kRecipeNTypes;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL) {
+            ret_val = recipe->type;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return kRecipeNTypes;
+    return ret_val;
 }
 
-uint16_t RecipeGetFlashOffTime(const struct recipe_t *recipe, const uint8_t timer_number) {
-    if (recipe != NULL && timer_number < RECIPE_MAX_FLASHOFF_TIMERS) {
-        return recipe->flash_off_time[timer_number];
+uint16_t RecipeGetPyroOffTime(const struct recipe_t *recipe, const uint8_t timer_number) {
+    uint16_t ret_val = 0;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL && timer_number < RECIPE_MAX_PYRO_OFF_TIMERS) {
+            ret_val = recipe->pyro_off_time[timer_number];
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return 0;
+    return ret_val;
 }
 
-uint8_t RecipeGetFlashOffPower(const struct recipe_t *recipe, const uint8_t timer_number) {
-    if (recipe != NULL && timer_number < RECIPE_MAX_FLASHOFF_TIMERS) {
-        return recipe->flash_off_power[timer_number];
+uint8_t RecipeGetPyroOffPower(const struct recipe_t *recipe, const uint8_t timer_number) {
+    uint8_t ret_val = 0;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL && timer_number < RECIPE_MAX_PYRO_OFF_TIMERS) {
+            ret_val = recipe->pyro_off_power[timer_number];
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return 0;
+    return ret_val;
 }
 
-uint16_t RecipeGetHardeningTime(const struct recipe_t *recipe, const uint8_t timer_number) {
-    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
-        return recipe->hardening_time[timer_number];
+uint16_t RecipeGetPyroOnTime(const struct recipe_t *recipe, const uint8_t timer_number) {
+    uint16_t ret_val = 0;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL && timer_number < RECIPE_MAX_PYRO_ON_TIMERS) {
+            ret_val = recipe->pyro_on_time[timer_number];
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return 0;
+    return ret_val;
 }
 
-uint8_t RecipeGetHardeningRise(const struct recipe_t *recipe, const uint8_t timer_number) {
-    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
-        return recipe->hardening_rise[timer_number];
+uint8_t RecipeGetPyroOnRise(const struct recipe_t *recipe, const uint8_t timer_number) {
+    uint8_t ret_val = 0;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL && timer_number < RECIPE_MAX_PYRO_ON_TIMERS) {
+            ret_val = recipe->pyro_on_rise[timer_number];
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return 0;
+    return ret_val;
 }
 
-uint16_t RecipeGetHardeningTemp(const struct recipe_t *recipe, const uint8_t timer_number) {
-    if (recipe != NULL && timer_number < RECIPE_MAX_HARDENING_TIMERS) {
-        return recipe->hardening_temp[timer_number];
+uint16_t RecipeGetPyroOnTemp(const struct recipe_t *recipe, const uint8_t timer_number) {
+    uint16_t ret_val = 0;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL && timer_number < RECIPE_MAX_PYRO_ON_TIMERS) {
+            ret_val = recipe->pyro_on_temp[timer_number];
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return 0;
+    return ret_val;
 }
 
 uint16_t RecipeGetUVTime(const struct recipe_t *recipe) {
-    if (recipe != NULL) {
-        return recipe->uv_time;
+    uint16_t ret_val = 0;
+    if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
+        if (recipe != NULL) {
+            ret_val = recipe->uv_time;
+        }
+        k_mutex_unlock(&recipes_mutex);
     }
-    return 0;
+    return ret_val;
 }

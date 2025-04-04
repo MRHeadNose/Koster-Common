@@ -8,12 +8,14 @@
 #define RECIPE_NAME_MAX_SIZE 128
 // Maximum number of recipes stored
 #define RECIPE_MAX_RECIPES 32
-// Maximum number of hardening (full bake) timers
-#define RECIPE_MAX_HARDENING_TIMERS 3
-// Maximum number of flash-off timers
-#define RECIPE_MAX_FLASHOFF_TIMERS 2
+// Maximum number of pyro-on timers
+#define RECIPE_MAX_PYRO_ON_TIMERS 3
+// Maximum number of pyro-off timers
+#define RECIPE_MAX_PYRO_OFF_TIMERS 2
 
 typedef enum { kRecipeIR, kRecipeUVIR, kRecipe3StepIR, kRecipeUV, kRecipeNTypes } recipe_type_t;
+// Ordered recipe type string for use in LVGL rollers
+#define RECIPE_TYPES_STRING "IR\nIR & UV\n3 Step IR\nUV"
 
 struct recipe_t;
 
@@ -25,20 +27,34 @@ struct recipe_t;
 int RecipeInit();
 
 /**
+ * Create a new recipe
+ *
+ * @param recipe pointer to the recipe pointer that will be filled when creating a new recipe.
+ * @return -1 on failure, 0 on success
+ */
+int RecipeNew(struct recipe_t **recipe);
+
+/**
+ * Delete a recipe
+ *
+ * @param recipe pointer to the recipe to delete
+ * @return -1 on failure, 0 on success
+ */
+int RecipeDelete(struct recipe_t *recipe);
+
+/**
  * Get a recipe by id
  *
- * @param recipe pointer to the recipe struct that will be filled when loading.
+ * @param recipe pointer to the recipe pointer that will be filled when loading.
  * @param id     the ID of the recipe to load;
  * @return -1 on failure, 0 on success
  */
-int RecipeGet(struct recipe_t* recipe, uint8_t id);
+int RecipeGet(struct recipe_t **recipe, uint8_t id);
 
 /**
  * Get the number of existing recipes.
  *
- * Note: Also check that the return value is less than RECIPE_MAX_RECIPES before using it to save a new recipe.
- *
- * @return The number of existing recipes. This is also the next available recipe_t.id
+ * @return The number of existing recipes.
  */
 uint8_t RecipeGetNRecipes();
 
@@ -78,54 +94,54 @@ int RecipeSetName(struct recipe_t *recipe, const char *name);
 int RecipeSetType(struct recipe_t *recipe, recipe_type_t type);
 
 /**
- * Set flash-off time
+ * Set pyro-off time
  *
  * @param recipe       pointer to the recipe to modify
- * @param timer_number the timer to modify. Must be less than RECIPE_MAX_FLASHOFF_TIMERS
+ * @param timer_number the timer to modify. Must be less than RECIPE_MAX_PYRO_OFF_TIMERS
  * @param seconds      the new time in seconds
  * @return -1 on failure, 0 on success
  */
-int RecipeSetFlashOffTime(struct recipe_t *recipe, uint8_t timer_number, uint16_t seconds);
+int RecipeSetPyroOffTime(struct recipe_t *recipe, uint8_t timer_number, uint16_t seconds);
 
 /**
- * Set flash-off power
+ * Set pyro-off power
  *
  * @param recipe       pointer to the recipe to modify
- * @param timer_number the timer to modify. Must be less than RECIPE_MAX_FLASHOFF_TIMERS
+ * @param timer_number the timer to modify. Must be less than RECIPE_MAX_PYRO_OFF_TIMERS
  * @param pct          the new power in percent
  * @return -1 on failure, 0 on success
  */
-int RecipeSetFlashOffPower(struct recipe_t *recipe, uint8_t timer_number, uint8_t pct);
+int RecipeSetPyroOffPower(struct recipe_t *recipe, uint8_t timer_number, uint8_t pct);
 
 /**
- * Set hardening (full-bake) time
+ * Set pyro-on time
  *
  * @param recipe       pointer to the recipe to modify
- * @param timer_number the timer to modify. Must be less than RECIPE_MAX_HARDENING_TIMERS
+ * @param timer_number the timer to modify. Must be less than RECIPE_MAX_PYRO_ON_TIMERS
  * @param seconds      the new time in seconds
  * @return -1 on failure, 0 on success
  */
-int RecipeSetHardeningTime(struct recipe_t *recipe, uint8_t timer_number, uint16_t seconds);
+int RecipeSetPyroOnTime(struct recipe_t *recipe, uint8_t timer_number, uint16_t seconds);
 
 /**
- * Set hardening (full-bake) temperature rise
+ * Set pyro-on temperature rise
  *
  * @param recipe       pointer to the recipe to modify
- * @param timer_number the timer to modify. Must be less than RECIPE_MAX_HARDENING_TIMERS
+ * @param timer_number the timer to modify. Must be less than RECIPE_MAX_PYRO_ON_TIMERS
  * @param c_per_min     the new rise time in celsius per minute
  * @return -1 on failure, 0 on success
  */
-int RecipeSetHardeningRise(struct recipe_t *recipe, uint8_t timer_number, uint8_t c_per_min);
+int RecipeSetPyroOnRise(struct recipe_t *recipe, uint8_t timer_number, uint8_t c_per_min);
 
 /**
- * Set hardening (full-bake) end temperature
+ * Set pyro-on end temperature
  *
  * @param recipe       pointer to the recipe to modify
- * @param timer_number the timer to modify. Must be less than RECIPE_MAX_HARDENING_TIMERS
+ * @param timer_number the timer to modify. Must be less than RECIPE_MAX_PYRO_ON_TIMERS
  * @param celsius      the new end temperature in celsius
  * @return -1 on failure, 0 on success
  */
-int RecipeSetHardeningTemp(struct recipe_t *recipe, uint8_t timer_number, uint16_t celsius);
+int RecipeSetPyroOnTemp(struct recipe_t *recipe, uint8_t timer_number, uint16_t celsius);
 
 /**
  * Set UV timer
@@ -155,49 +171,49 @@ int RecipeGetName(const struct recipe_t *recipe, char *buf, size_t bufsz);
 recipe_type_t RecipeGetType(const struct recipe_t *recipe);
 
 /**
- * Get flash-off time
+ * Get pyro-off time
  *
  * @param recipe       pointer to the recipe
- * @param timer_number the timer to get. Must be less than RECIPE_MAX_FLASHOFF_TIMERS
+ * @param timer_number the timer to get. Must be less than RECIPE_MAX_PYRO_OFF_TIMERS
  * @return the time in seconds
  */
-uint16_t RecipeGetFlashOffTime(const struct recipe_t *recipe, uint8_t timer_number);
+uint16_t RecipeGetPyroOffTime(const struct recipe_t *recipe, uint8_t timer_number);
 
 /**
- * Get flash-off power
+ * Get pyro-off power
  *
  * @param recipe       pointer to the recipe
- * @param timer_number the timer to get. Must be less than RECIPE_MAX_FLASHOFF_TIMERS
+ * @param timer_number the timer to get. Must be less than RECIPE_MAX_PYRO_OFF_TIMERS
  * @return the power in percent
  */
-uint8_t RecipeGetFlashOffPower(const struct recipe_t *recipe, uint8_t timer_number);
+uint8_t RecipeGetPyroOffPower(const struct recipe_t *recipe, uint8_t timer_number);
 
 /**
- * Get hardening (full-bake) time
+ * Get pyro-on time
  *
  * @param recipe       pointer to the recipe
- * @param timer_number the timer to get. Must be less than RECIPE_MAX_HARDENING_TIMERS
+ * @param timer_number the timer to get. Must be less than RECIPE_MAX_PYRO_ON_TIMERS
  * @return the time in seconds
  */
-uint16_t RecipeGetHardeningTime(const struct recipe_t *recipe, uint8_t timer_number);
+uint16_t RecipeGetPyroOnTime(const struct recipe_t *recipe, uint8_t timer_number);
 
 /**
- * Get hardening (full-bake) temperature rise
+ * Get pyro-on temperature rise
  *
  * @param recipe       pointer to the recipe
- * @param timer_number the timer to get. Must be less than RECIPE_MAX_HARDENING_TIMERS
+ * @param timer_number the timer to get. Must be less than RECIPE_MAX_PYRO_ON_TIMERS
  * @return the rise time in celsius per minute
  */
-uint8_t RecipeGetHardeningRise(const struct recipe_t *recipe, uint8_t timer_number);
+uint8_t RecipeGetPyroOnRise(const struct recipe_t *recipe, uint8_t timer_number);
 
 /**
- * Get hardening (full-bake) end temperature
+ * Get pyro-on end temperature
  *
  * @param recipe       pointer to the recipe
- * @param timer_number the timer to get. Must be less than RECIPE_MAX_HARDENING_TIMERS
+ * @param timer_number the timer to get. Must be less than RECIPE_MAX_PYRO_ON_TIMERS
  * @return the end temperature in celsius
  */
-uint16_t RecipeGetHardeningTemp(const struct recipe_t *recipe, uint8_t timer_number);
+uint16_t RecipeGetPyroOnTemp(const struct recipe_t *recipe, uint8_t timer_number);
 
 /**
  * Get UV timer
