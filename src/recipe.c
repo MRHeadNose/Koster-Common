@@ -1,6 +1,7 @@
 #include "koster-common/recipe.h"
 
 #include <memory.h>
+#include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/settings/settings.h>
 #if defined(CONFIG_SETTINGS_FILE)
@@ -13,7 +14,6 @@ LOG_MODULE_REGISTER(koster_common);
 #define STORAGE_PARTITION storage_partition
 #define STORAGE_PARTITION_ID FIXED_PARTITION_ID(STORAGE_PARTITION)
 #define RECIPIES_SETTING "koster_common/recipes"
-#define RECIPE_NO_ID 255
 
 static struct settings_handler handler_;
 
@@ -30,7 +30,7 @@ struct recipe_t {
 };
 
 struct recipes_t {
-    size_t n_recipes;
+    uint8_t n_recipes;
     struct recipe_t recipes[RECIPE_MAX_RECIPES];
 };
 
@@ -57,7 +57,8 @@ static const struct recipe_t kDefaultRecipe1 = {
         .uv_time = 200,
 };
 
-K_MUTEX_DEFINE(recipes_mutex);
+struct k_mutex recipes_mutex;
+
 #define RECIPES_MUTEX_TIMEOUT 100
 static struct recipes_t recipes_;
 
@@ -98,6 +99,23 @@ static int handle_export(int (*storage_func)(const char *name, const void *value
 }
 
 int RecipeInit() {
+    k_mutex_init(&recipes_mutex);
+
+    recipes_.n_recipes = 0;
+    for (int i = 0; i < RECIPE_MAX_RECIPES; ++i) {
+        RecipeSetName(&recipes_.recipes[i], "");
+        for (int k = 0; k < RECIPE_MAX_PYRO_OFF_TIMERS; ++k) {
+            recipes_.recipes[i].pyro_off_power[k] = 0;
+            recipes_.recipes[i].pyro_off_time[k] = 0;
+        }
+        for (int k = 0; k < RECIPE_MAX_PYRO_ON_TIMERS; ++k) {
+            recipes_.recipes[i].pyro_on_rise[k] = 0;
+            recipes_.recipes[i].pyro_on_temp[k] = 0;
+            recipes_.recipes[i].pyro_on_time[k] = 0;
+        }
+        recipes_.recipes[i].uv_time = 0;
+    }
+
     int rc;
 
 #if defined(CONFIG_SETTINGS_FILE)
@@ -146,7 +164,7 @@ int RecipeInit() {
             recipes_.recipes[1] = kDefaultRecipe1;
             RecipePersist();
         } else {
-            LOG_INF("[recipe] Loaded %i recipes.", recipes_.n_recipes);
+            LOG_INF("[recipe] Loaded %d recipes.", recipes_.n_recipes);
         }
         k_mutex_unlock(&recipes_mutex);
     }
@@ -169,7 +187,7 @@ int RecipeGet(struct recipe_t **recipe, const uint8_t id) {
 int RecipeNew(struct recipe_t **recipe) {
     int rc = -1;
     if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
-        if (recipes_.n_recipes < RECIPE_MAX_RECIPES - 1) {
+        if (recipes_.n_recipes < RECIPE_MAX_RECIPES) {
             for (int i = 0; i < RECIPE_MAX_PYRO_OFF_TIMERS; ++i) {
                 recipes_.recipes[recipes_.n_recipes].pyro_off_time[i] = 0;
                 recipes_.recipes[recipes_.n_recipes].pyro_off_power[i] = 0;
@@ -180,8 +198,8 @@ int RecipeNew(struct recipe_t **recipe) {
                 recipes_.recipes[recipes_.n_recipes].pyro_on_rise[i] = 0;
             }
             recipes_.recipes[recipes_.n_recipes].uv_time = 0;
-            recipes_.recipes[recipes_.n_recipes].id = recipes_.n_recipes;
             recipes_.recipes[recipes_.n_recipes].type = kRecipeIR;
+            recipes_.recipes[recipes_.n_recipes].id = recipes_.n_recipes;
 
             *recipe = &recipes_.recipes[recipes_.n_recipes];
             ++recipes_.n_recipes;
@@ -194,29 +212,46 @@ int RecipeNew(struct recipe_t **recipe) {
 
 int RecipeDelete(struct recipe_t *recipe) {
     int rc = -1;
+    if (recipe == NULL) {
+        return rc;
+    }
+
     if (k_mutex_lock(&recipes_mutex, K_MSEC(RECIPES_MUTEX_TIMEOUT)) == 0) {
         // zero all fields
+        const uint8_t id = recipe->id;
         for (int i = 0; i < RECIPE_MAX_PYRO_OFF_TIMERS; ++i) {
-            recipe->pyro_off_time[i] = 0;
-            recipe->pyro_off_power[i] = 0;
+            recipes_.recipes[id].pyro_off_time[i] = 0;
+            recipes_.recipes[id].pyro_off_power[i] = 0;
         }
         for (int i = 0; i < RECIPE_MAX_PYRO_ON_TIMERS; ++i) {
-            recipe->pyro_on_rise[i] = 0;
-            recipe->pyro_on_time[i] = 0;
-            recipe->pyro_on_rise[i] = 0;
+            recipes_.recipes[id].pyro_on_rise[i] = 0;
+            recipes_.recipes[id].pyro_on_time[i] = 0;
+            recipes_.recipes[id].pyro_on_rise[i] = 0;
         }
-        recipe->uv_time = 0;
-        recipe->id = RECIPE_NO_ID;
-        recipe->type = 0;
+        recipes_.recipes[id].uv_time = 0;
+        recipes_.recipes[id].id = 0;
+        recipes_.recipes[id].type = kRecipeNone;
 
         // repack the struct
-        for (int i = 0; i < recipes_.n_recipes - 1; ++i) {
-            if (recipes_.recipes[i].id == RECIPE_NO_ID) {
-                recipes_.recipes[i] = recipes_.recipes[i + 1];
+        for (int i = id; i < recipes_.n_recipes; ++i) {
+            for (int k = 0; k < RECIPE_MAX_PYRO_OFF_TIMERS; ++k) {
+                recipes_.recipes[i].pyro_off_time[k] = recipes_.recipes[i + 1].pyro_off_time[k];
+                recipes_.recipes[i].pyro_off_power[k] = recipes_.recipes[i + 1].pyro_off_power[k];
             }
+            for (int k = 0; k < RECIPE_MAX_PYRO_ON_TIMERS; ++k) {
+                recipes_.recipes[i].pyro_on_temp[k] = recipes_.recipes[i + 1].pyro_on_temp[k];
+                recipes_.recipes[i].pyro_on_time[k] = recipes_.recipes[i + 1].pyro_on_time[k];
+                recipes_.recipes[i].pyro_on_rise[k] = recipes_.recipes[i + 1].pyro_on_rise[k];
+            }
+            recipes_.recipes[i].uv_time = recipes_.recipes[i + 1].uv_time;
+            recipes_.recipes[i].type = recipes_.recipes[i + 1].type;
+            RecipeSetName(&recipes_.recipes[i], recipes_.recipes[i + 1].name);
+            recipes_.recipes[i].id = i;
         }
+        --recipes_.n_recipes;
 
         k_mutex_unlock(&recipes_mutex);
+        rc = 0;
     }
     return rc;
 }
@@ -445,4 +480,26 @@ uint16_t RecipeGetUVTime(const struct recipe_t *recipe) {
         k_mutex_unlock(&recipes_mutex);
     }
     return ret_val;
+}
+
+void RecipePrintAll() {
+    for (int i = 0; i < recipes_.n_recipes; ++i) {
+        LOG_INF("[recipe] %s, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i",
+                recipes_.recipes[i].name,
+                recipes_.recipes[i].type,
+                recipes_.recipes[i].pyro_off_power[0],
+                recipes_.recipes[i].pyro_off_time[0],
+                recipes_.recipes[i].pyro_off_power[1],
+                recipes_.recipes[i].pyro_off_time[1],
+                recipes_.recipes[i].pyro_on_time[0],
+                recipes_.recipes[i].pyro_on_rise[0],
+                recipes_.recipes[i].pyro_on_temp[0],
+                recipes_.recipes[i].pyro_on_time[1],
+                recipes_.recipes[i].pyro_on_rise[1],
+                recipes_.recipes[i].pyro_on_temp[1],
+                recipes_.recipes[i].pyro_on_time[2],
+                recipes_.recipes[i].pyro_on_rise[2],
+                recipes_.recipes[i].pyro_on_temp[2],
+                recipes_.recipes[i].uv_time);
+    }
 }
