@@ -1,0 +1,24 @@
+name: Unit tests
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure
+      run: cmake -B ${{github.workspace}}/build
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest
