@@ -195,7 +195,7 @@ int RecipeNew(struct recipe_t **recipe) {
             for (int i = 0; i < RECIPE_MAX_PYRO_ON_TIMERS; ++i) {
                 recipes_.recipes[recipes_.n_recipes].pyro_on_rise[i] = 0;
                 recipes_.recipes[recipes_.n_recipes].pyro_on_time[i] = 0;
-                recipes_.recipes[recipes_.n_recipes].pyro_on_rise[i] = 0;
+                recipes_.recipes[recipes_.n_recipes].pyro_on_temp[i] = 0;
             }
             recipes_.recipes[recipes_.n_recipes].uv_time = 0;
             recipes_.recipes[recipes_.n_recipes].type = kRecipeIR;
