@@ -4,8 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Support at least 32 UTF-8 characters
-#define RECIPE_NAME_MAX_SIZE 128
+// Support at least 31 UTF-8 characters
+#define RECIPE_NAME_MAX_SIZE 127
 // Maximum number of recipes stored
 #define RECIPE_MAX_RECIPES 32
 // Maximum number of pyro-on timers

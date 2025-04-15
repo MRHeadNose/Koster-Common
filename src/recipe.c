@@ -13,13 +13,14 @@ LOG_MODULE_REGISTER(koster_common);
 
 #define STORAGE_PARTITION storage_partition
 #define STORAGE_PARTITION_ID FIXED_PARTITION_ID(STORAGE_PARTITION)
-#define RECIPIES_SETTING "koster_common/recipes"
+#define RECIPES_SETTING "koster_common/recipes"
+#define RECIPE_NAME_MAX_STORAGE_SIZE RECIPE_NAME_MAX_SIZE + 1
 
 static struct settings_handler handler_;
 
 struct recipe_t {
     uint8_t id;
-    char name[RECIPE_NAME_MAX_SIZE];
+    char name[RECIPE_NAME_MAX_STORAGE_SIZE];
     recipe_type_t type;
     uint16_t pyro_off_time[RECIPE_MAX_PYRO_OFF_TIMERS];  // pyro-off time (seconds)
     uint8_t pyro_off_power[RECIPE_MAX_PYRO_OFF_TIMERS];  // pyro-off power (percent)
@@ -91,7 +92,7 @@ static int handle_set(const char *name, size_t len, settings_read_cb read_cb, vo
 static int handle_export(int (*storage_func)(const char *name, const void *value, size_t val_len)) {
     int ret = -EBUSY;
     if (k_mutex_lock(&recipes_mutex, K_FOREVER) == 0) {
-        ret = storage_func(RECIPIES_SETTING, &recipes_, sizeof(recipes_));
+        ret = storage_func(RECIPES_SETTING, &recipes_, sizeof(recipes_));
         k_mutex_unlock(&recipes_mutex);
     }
     return ret;
@@ -102,17 +103,7 @@ int RecipeInit() {
 
     recipes_.n_recipes = 0;
     for (int i = 0; i < RECIPE_MAX_RECIPES; ++i) {
-        RecipeSetName(&recipes_.recipes[i], "");
-        for (int k = 0; k < RECIPE_MAX_PYRO_OFF_TIMERS; ++k) {
-            recipes_.recipes[i].pyro_off_power[k] = 0;
-            recipes_.recipes[i].pyro_off_time[k] = 0;
-        }
-        for (int k = 0; k < RECIPE_MAX_PYRO_ON_TIMERS; ++k) {
-            recipes_.recipes[i].pyro_on_rise[k] = 0;
-            recipes_.recipes[i].pyro_on_temp[k] = 0;
-            recipes_.recipes[i].pyro_on_time[k] = 0;
-        }
-        recipes_.recipes[i].uv_time = 0;
+        memset(&recipes_.recipes[i], 0, sizeof(struct recipe_t));
     }
 
     int rc;
@@ -187,16 +178,7 @@ int RecipeNew(struct recipe_t **recipe) {
     int rc = -1;
     if (k_mutex_lock(&recipes_mutex, K_FOREVER) == 0) {
         if (recipes_.n_recipes < RECIPE_MAX_RECIPES) {
-            for (int i = 0; i < RECIPE_MAX_PYRO_OFF_TIMERS; ++i) {
-                recipes_.recipes[recipes_.n_recipes].pyro_off_time[i] = 0;
-                recipes_.recipes[recipes_.n_recipes].pyro_off_power[i] = 0;
-            }
-            for (int i = 0; i < RECIPE_MAX_PYRO_ON_TIMERS; ++i) {
-                recipes_.recipes[recipes_.n_recipes].pyro_on_rise[i] = 0;
-                recipes_.recipes[recipes_.n_recipes].pyro_on_time[i] = 0;
-                recipes_.recipes[recipes_.n_recipes].pyro_on_temp[i] = 0;
-            }
-            recipes_.recipes[recipes_.n_recipes].uv_time = 0;
+            memset(&recipes_.recipes[recipes_.n_recipes], 0, sizeof(struct recipe_t));
             recipes_.recipes[recipes_.n_recipes].type = kRecipeIR;
             recipes_.recipes[recipes_.n_recipes].id = recipes_.n_recipes;
 
@@ -244,7 +226,7 @@ uint8_t RecipeGetNumRecipes() {
 int RecipePersistAll() {
     int rc = -1;
     if (k_mutex_lock(&recipes_mutex, K_FOREVER) == 0) {
-        rc = settings_save_one(RECIPIES_SETTING, &recipes_, sizeof(recipes_));
+        rc = settings_save_one(RECIPES_SETTING, &recipes_, sizeof(recipes_));
         if (rc != 0) {
             LOG_ERR("[recipe] settings_save_one failed (err %d)", rc);
         }
