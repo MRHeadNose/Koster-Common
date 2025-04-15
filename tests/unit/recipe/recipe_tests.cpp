@@ -12,7 +12,7 @@ class RecipeTests : public testing::Test {
 };
 
 TEST_F(RecipeTests, RecipeInit_AddsDefaultRecipes) {
-    EXPECT_EQ(RecipeGetNRecipes(), 2);  // 2 default recipes
+    EXPECT_EQ(RecipeGetNumRecipes(), 2);  // 2 default recipes
 
     // Validate recipe names
     recipe_t *recipe;
@@ -34,7 +34,7 @@ TEST_F(RecipeTests, RecipeDelete_DeleteLastRecipe) {
     EXPECT_EQ(RecipeGet(&recipe, 1), 0);
     EXPECT_EQ(RecipeDelete(recipe), 0);
 
-    EXPECT_EQ(RecipeGetNRecipes(), 1);
+    EXPECT_EQ(RecipeGetNumRecipes(), 1);
 
     EXPECT_EQ(RecipeGet(&recipe, 0), 0);
     EXPECT_EQ(RecipeGetName(recipe, name, RECIPE_NAME_MAX_SIZE), 0);
@@ -51,7 +51,7 @@ TEST_F(RecipeTests, RecipeDelete_DeleteFirstRecipe) {
     EXPECT_EQ(RecipeGet(&recipe, 0), 0);
     EXPECT_EQ(RecipeDelete(recipe), 0);
 
-    EXPECT_EQ(RecipeGetNRecipes(), 1);
+    EXPECT_EQ(RecipeGetNumRecipes(), 1);
 
     EXPECT_EQ(RecipeGet(&recipe, 0), 0);
     EXPECT_EQ(RecipeGetName(recipe, name, RECIPE_NAME_MAX_SIZE), 0);
@@ -61,18 +61,18 @@ TEST_F(RecipeTests, RecipeDelete_DeleteFirstRecipe) {
 }
 
 TEST_F(RecipeTests, RecipeNew_AddMaxRecipes) {
-    EXPECT_EQ(RecipeGetNRecipes(), 2);  // 2 default recipes
+    EXPECT_EQ(RecipeGetNumRecipes(), 2);  // 2 default recipes
 
     recipe_t *recipe;
     for (int i = 0; i < RECIPE_MAX_RECIPES - 2; ++i) {
         EXPECT_EQ(RecipeNew(&recipe), 0);
-        EXPECT_EQ(RecipeGetNRecipes(), i + 3);
+        EXPECT_EQ(RecipeGetNumRecipes(), i + 3);
     }
     EXPECT_EQ(RecipeNew(&recipe), -1);
 }
 
 TEST_F(RecipeTests, AddGetAndDeleteAFew) {
-    EXPECT_EQ(RecipeGetNRecipes(), 2);  // 2 default recipes
+    EXPECT_EQ(RecipeGetNumRecipes(), 2);  // 2 default recipes
 
     // Create 4 recipes
     recipe_t *recipe;
@@ -190,18 +190,26 @@ TEST_F(RecipeTests, AddGetAndDeleteAFew) {
     EXPECT_EQ(RecipeGetPyroOnTemp(recipe, 2), 37);
     EXPECT_EQ(RecipeGetUVTime(recipe), 38);
 
-    // Delete recipes "IR recipe" and "3 step IR", then read "UV recipe" and "UVIR recipe":
-    EXPECT_EQ(RecipeGet(&recipe, 2), 0);  // "IR recipe"
-    EXPECT_EQ(RecipeDelete(recipe), 0);
-    EXPECT_EQ(RecipeGet(&recipe, 3), 0);  // "3 step IR"
+    // Delete recipes "IR recipe"
+    EXPECT_EQ(RecipeGet(&recipe, 2), 0);
+    EXPECT_EQ(RecipeGetName(recipe, name, RECIPE_NAME_MAX_SIZE), 0);
+    EXPECT_STREQ(name, "IR recipe");
     EXPECT_EQ(RecipeDelete(recipe), 0);
 
+    // Delete recipe "3 step IR",
+    EXPECT_EQ(RecipeGet(&recipe, 3), 0);
+    EXPECT_EQ(RecipeGetName(recipe, name, RECIPE_NAME_MAX_SIZE), 0);
+    EXPECT_STREQ(name, "3 step IR");
+    EXPECT_EQ(RecipeDelete(recipe), 0);
+
+    // Read "UV recipe"
     EXPECT_EQ(RecipeGet(&recipe, 2), 0);
     EXPECT_EQ(RecipeGetName(recipe, name, RECIPE_NAME_MAX_SIZE), 0);
     EXPECT_STREQ(name, "UV recipe");
     EXPECT_EQ(RecipeGetType(recipe), kRecipeUV);
     EXPECT_EQ(RecipeGetUVTime(recipe), 11);
 
+    // Read "UVIR recipe"
     EXPECT_EQ(RecipeGet(&recipe, 3), 0);
     EXPECT_EQ(RecipeGetName(recipe, name, RECIPE_NAME_MAX_SIZE), 0);
     EXPECT_STREQ(name, "UVIR recipe");

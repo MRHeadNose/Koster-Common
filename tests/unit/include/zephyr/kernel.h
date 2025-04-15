@@ -7,6 +7,7 @@
 
 #define K_MSEC(X) X
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define K_FOREVER 0
 
 struct k_mutex {
     int foo;

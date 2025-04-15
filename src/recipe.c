@@ -205,6 +205,7 @@ int RecipeDelete(struct recipe_t *recipe) {
         // repack the struct
         for (int i = id; i < recipes_.n_recipes; ++i) {
             memmove(&recipes_.recipes[i], &recipes_.recipes[i + 1], sizeof(struct recipe_t));
+            /* recipes_.recipes[i].id = i; */
         }
         --recipes_.n_recipes;
 
