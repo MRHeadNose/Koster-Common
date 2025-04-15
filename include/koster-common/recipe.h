@@ -56,30 +56,21 @@ int RecipeGet(struct recipe_t **recipe, uint8_t id);
  *
  * @return The number of existing recipes.
  */
-uint8_t RecipeGetNRecipes();
-
-/**
- * Save a recipe. If recipe.id exists, the recipe will be overwritten. If recipe.id is the next unused value, a new
- * recipe will be created. In other cases, the function will return error.
- *
- * @param recipe pointer to the recipe struct that will be filled when loading
- * @param id     the ID of the recipe to load
- * @return -1 on failure, 0 on success
- */
-int RecipeSave(const struct recipe_t* recipe);
+uint8_t RecipeGetNumRecipes();
 
 /**
  * Save all recipes to persistent storage
  *
  * @return -1 on failure, 0 on success
  */
-int RecipePersist();
+int RecipePersistAll();
 
 /**
  * Set recipe name
  *
  * @param recipe pointer to the recipe to modify
- * @param name the new name
+ * @param name null-terminated string with the new name. The size can be most RECIPE_NAME_MAX_SIZE including the null
+ * character.
  * @return -1 on failure, 0 on success
  */
 int RecipeSetName(struct recipe_t *recipe, const char *name);
