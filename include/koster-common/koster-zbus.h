@@ -128,6 +128,8 @@ struct kzbus_msg_t {
     union {
         struct kzbus_req_start_msg_t req_start_msg;
         struct kzbus_req_stop_msg_t req_stop_msg;
+        struct kzbus_req_laser_on_msg_t req_laser_on_msg;
+        struct kzbus_req_laser_on_msg_t req_laser_off_msg;
         struct kzbus_program_msg_t program_msg;
         struct kzbus_temperature_msg_t temperature_msg;
         struct kzbus_distance_msg_t distance_msg;
