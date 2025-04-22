@@ -17,3 +17,4 @@ include(GoogleTest)
 
 enable_testing()
 add_subdirectory(recipe)
+add_subdirectory(parameters)
