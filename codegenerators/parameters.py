@@ -20,6 +20,7 @@ header = """
 #define PARAM_NUM_CATEGORIES {n_categories}
 #define PARAM_NUM_PARAMS {n_params}
 #define PARAM_MAX_NUM_PARAMS_IN_CATEGORY {max_n_params_in_category}
+#define PARAM_NAME_MAX_LEN {param_name_max_len}
 
 void ParamInit();
 
@@ -33,7 +34,7 @@ void ParamInit();
 int ParamGetCategoryNameAlpha(uint8_t index, char* name);
 
 /**
-* Get the number of parameters in category
+* Get the number of parameters in a category
 *
 * @return number of parameters in category on success, -1 on failure
 * @param index the alphabetical index of the category
@@ -48,6 +49,24 @@ int ParamNumParamsInCategory(uint8_t index);
 * @param parameter_index  the alphabetical index of the parameter in the category
 */
 int ParamParamIdInCategoryAlpha(uint8_t category_index, uint8_t parameter_index);
+
+/**
+* Get name of parameter
+*
+* @return 0 on success, -1 on failure
+* @param parameter_id parameter Id
+* @param name         will be filled with the parameter name
+*/
+int ParamGetName(uint8_t parameter_id, char* name);
+
+/**
+* Get string representation of parameter value
+*
+* @return 0 on success, -1 on failure
+* @param parameter_id parameter Id
+* @param name         will be filled with the string representation of the parameter value
+*/
+int ParamGetValueString(uint8_t parameter_id, char* name);
 
 /**
 * Get parameter by ID
@@ -153,6 +172,20 @@ int ParamParamIdInCategoryAlpha(uint8_t category_index, uint8_t parameter_index)
     return -1;
 }}
 
+int ParamGetName(uint8_t parameter_id, char* name) {{
+    switch (parameter_id) {{
+{param_get_name_cases}
+    }}
+    return -1;
+}}
+
+int ParamGetValueString(uint8_t parameter_id, char* name) {{
+    switch (parameter_id) {{
+{param_get_name_cases}
+    }}
+    return -1;
+}}
+
 int ParamGet(uint8_t id, int32_t *value){{
     switch (id) {{
 {get_cases}
@@ -243,6 +276,11 @@ param_in_category_case = """
 parameter_case = """
             case {parameter_index}:
                 return {parameter_id};
+"""
+param_get_name_case = """
+        case {id}:
+            strncpy(name, "{name}", PARAM_NAME_MAX_LEN);
+            return 0;
 """
 
 class Configuration:
@@ -406,6 +444,7 @@ class SourceGenerator:
         set_cases = []
         incr_cases = []
         decr_cases = []
+        param_get_name_cases = []
         for param in self.config.parameters:
             type = self.config.parameters[param]["Type"]
             name = to_camelcase(self.config.parameters[param]["Name"])
@@ -451,6 +490,7 @@ class SourceGenerator:
                 min=minimum,
                 max=maximum
             ))
+            param_get_name_cases.append(param_get_name_case.format(id=param, name=self.config.parameters[param]["Name"]))
             
         validators = []
         for type in self.config.enums:
@@ -487,7 +527,8 @@ class SourceGenerator:
             categories="\n".join(categories),
             n_categories=len(self.config.categories.keys()),
             category_max_len=max([len(c) for c in self.config.categories.keys()]) + 1, # +1 for null termination
-            max_n_params_in_category=max(n_params_in_category)
+            max_n_params_in_category=max(n_params_in_category),
+            param_name_max_len=max([len(p["Name"]) for p in self.config.parameters.values()])
         )
         with open(header_path, 'w') as file_:
             file_.write(header_content)
@@ -503,7 +544,8 @@ class SourceGenerator:
             incr_cases="\n".join(incr_cases),
             decr_cases="\n".join(decr_cases),
             n_params_in_category_cases="\n".join(n_params_in_category_cases),
-            param_in_category_cases="\n".join(param_in_category_cases)
+            param_in_category_cases="\n".join(param_in_category_cases),
+            param_get_name_cases='\n'.join(param_get_name_cases)
         )
         with open(source_path, 'w') as file_:
             file_.write(source_content)
