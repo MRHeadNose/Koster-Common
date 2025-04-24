@@ -14,6 +14,12 @@ header = """
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "koster-common/parameters_base.h"
+#include <zephyr/kernel.h>
+
+struct param_t;
+struct param_category_t;
+
 {enums}
 
 #define PARAM_CATEGORY_NAME_MAX_LEN {category_max_len}
@@ -21,86 +27,8 @@ header = """
 #define PARAM_NUM_PARAMS {n_params}
 #define PARAM_MAX_NUM_PARAMS_IN_CATEGORY {max_n_params_in_category}
 #define PARAM_NAME_MAX_LEN {param_name_max_len}
-
-void ParamInit();
-
-/**
-* Get parameter name sorted alphabetically
-*
-* @return 0 on success, -1 on failure
-* @param index the alphabetical index of the category
-* @param name  will be filled with the category name
-*/
-int ParamGetCategoryNameAlpha(uint8_t index, char* name);
-
-/**
-* Get the number of parameters in a category
-*
-* @return number of parameters in category on success, -1 on failure
-* @param index the alphabetical index of the category
-*/
-int ParamNumParamsInCategory(uint8_t index);
-
-/**
-* Get parameter ID in alphabetical order from a category
-*
-* @return the parameter ID or -1 on failure
-* @param category_index   the alphabetical index of the category
-* @param parameter_index  the alphabetical index of the parameter in the category
-*/
-int ParamParamIdInCategoryAlpha(uint8_t category_index, uint8_t parameter_index);
-
-/**
-* Get name of parameter
-*
-* @return 0 on success, -1 on failure
-* @param parameter_id parameter Id
-* @param name         will be filled with the parameter name
-*/
-int ParamGetName(uint8_t parameter_id, char* name);
-
-/**
-* Get string representation of parameter value
-*
-* @return 0 on success, -1 on failure
-* @param parameter_id parameter Id
-* @param name         will be filled with the string representation of the parameter value
-*/
-int ParamGetValueString(uint8_t parameter_id, char* name);
-
-/**
-* Get parameter by ID
-*
-* @return 0 on success, -1 on failure
-* @param id     the ID of the parameter to get
-* @param value  will be filled with the parameter value
-*/
-int ParamGet(uint8_t id, int32_t *value);
-
-/**
-* Increase parameter value. Will wrap-around.
-*
-* @return 0 on success, -1 on failure
-* @param id  the ID of the parameter to increase the value of
-*/
-int ParamIncr(uint8_t id);
-
-/**
-* Decrease parameter value. Will wrap-around.
-*
-* @return 0 on success, -1 on failure
-* @param id  the ID of the parameter to decrease the value of
-*/
-int ParamDecr(uint8_t id);
-
-/**
-* Set parameter by ID
-*
-* @return 0 on success, -1 on failure
-* @param value  the value to set
-* @param id     the ID of the parameter to set
-*/
-int ParamSet(uint8_t id, const int32_t value);
+#define PARAM_DESC_MAX_LEN {param_desc_max_len}
+#define PARAM_VALUE_STRING_MAX_LEN {param_value_string_max_len}
 
 {getter_declarations}
 
@@ -123,165 +51,126 @@ getter_declaration = """/**
 */
 {type} ParamGet{name}();
 """
+
 setter_declaration = """/**
 * Set parameter {name}
 *
 * @return 0 on success, -1 on failure (e.g. out of range)
 * @param value the value to set
 */
-int ParamSet{name}({type} value);
+int ParamSet{name}(const {type} value);
 """
 
 source = """
 #include "koster-common/parameters.h"
+#include "parameters_private.h"
 #include <string.h>
 
-struct param_category_t{{
-    uint8_t id;
-    char name[PARAM_CATEGORY_NAME_MAX_LEN];
-}};
-static struct param_category_t param_categories[PARAM_NUM_CATEGORIES];
+extern struct k_mutex param_mutex;
+static struct param_t params_[PARAM_NUM_PARAMS];
+static struct param_category_t categories_[PARAM_NUM_CATEGORIES];
 
-{parameters}
+{get_value_string_funcs}
 
-void ParamInit(){{
-{initializers}
-}}
-
-{validators}
-
-int ParamGetCategoryNameAlpha(uint8_t index, char* name){{
-    if (index < PARAM_NUM_CATEGORIES) {{
-        strncpy(name, param_categories[index].name, PARAM_CATEGORY_NAME_MAX_LEN);
-        return 0;
+int ParamInit(){{
+    int rc = -1;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
+{parameter_initializers}
+{category_initializers}
+        k_mutex_unlock(&param_mutex);
+        rc = 0;
     }}
-    return -1;
-}}
-
-int ParamNumParamsInCategory(uint8_t index){{
-    switch (index) {{
-{n_params_in_category_cases}
-    }}
-    return -1;
-}}
-
-int ParamParamIdInCategoryAlpha(uint8_t category_index, uint8_t parameter_index){{
-    switch (category_index) {{
-{param_in_category_cases}
-    }}
-    return -1;
-}}
-
-int ParamGetName(uint8_t parameter_id, char* name) {{
-    switch (parameter_id) {{
-{param_get_name_cases}
-    }}
-    return -1;
-}}
-
-int ParamGetValueString(uint8_t parameter_id, char* name) {{
-    switch (parameter_id) {{
-{param_get_name_cases}
-    }}
-    return -1;
-}}
-
-int ParamGet(uint8_t id, int32_t *value){{
-    switch (id) {{
-{get_cases}
-    }}
-    return -1;
-}}
-
-int ParamSet(uint8_t id, const int32_t value){{
-    switch (id) {{
-{set_cases}
-    }}
-    return -1;
-}}
-
-int ParamIncr(uint8_t id){{
-    switch (id) {{
-{incr_cases}
-    }}
-    return -1;
-}}
-
-int ParamDecr(uint8_t id){{
-    switch (id) {{
-{decr_cases}
-    }}
-    return -1;
+    return rc;
 }}
 
 {getter_definitions}
 
 {setter_definitions}
 
-
-"""
-getter_definition = """{type} ParamGet{name}(){{
-    return param_{name};
-}}"""
-setter_definition = """int ParamSet{name}(const {type} value){{
-    if ( !({validators}) ){{
-        return -1;
+int ParamGetCategory(struct param_category_t** category, const unsigned int index) {{
+    int rc = -1;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
+        if (index < PARAM_NUM_CATEGORIES) {{
+            *category = &categories_[index];
+            rc = 0;
+        }}
+        k_mutex_unlock(&param_mutex);
     }}
-    param_{name} = value;
+    return rc;
+}}
+
+int ParamGetCurrentValueString(struct param_t* param, char* buf) {{
+    int rc = -1;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
+        switch (param->id) {{
+{get_value_string_cases}
+        default:
+            snprintf(buf, PARAM_VALUE_STRING_MAX_LEN, "%i", param->value);
+            rc = 0;
+            break;
+        }}
+        k_mutex_unlock(&param_mutex);
+    }}
+    return rc;
+}}
+"""
+get_value_string_func = """
+int get_value_string_{type}(const int32_t value, char *buf){{
+    switch (value) {{
+        {get_value_string_type_cases}
+    }}
+    return -1;
+}}"""
+get_value_string_type_case = """
+        case {value}:
+            strncpy(buf, "{string}", PARAM_VALUE_STRING_MAX_LEN);
+            return 0;"""
+get_value_string_case = """
+        case {id}:
+            rc = get_value_string_{type}(param->value, buf);
+            break;"""
+
+getter_definition = """{type} ParamGet{name}(){{
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
+        uint32_t ret = params_[{index}].value;
+        k_mutex_unlock(&param_mutex);
+        return ret;
+    }}
     return 0;
 }}"""
 
-parameter = "static {type} param_{name};"
-initializer = "    param_{name} = {value};"
-validator = """static bool validate_{type}(const param_{type} value){{
-    return value >= {min} && value < {max};
-}}
-"""
-get_case = """
-        case {id}:
-            *value = (int32_t)param_{name};
-            return 0;"""
-set_case = """
-        case {id}:
-            return ParamSet{name}(({type})value);"""
-init_category_name = '    strcpy(param_categories[{index}].name, "{name}");'
-init_category_id = '    param_categories[{index}].id = {id};'
-incr_case = """
-        case {id}:
-            if( (int32_t)param_{name} >= {max} ){{
-                param_{name} = {min};
-            }} else {{
-                ++param_{name};
-            }}
-            return 0;"""
-decr_case = """
-        case {id}:
-            if( (int32_t)param_{name} <= {min} ){{
-                param_{name} = {max};
-            }} else {{
-                --param_{name};
-            }}
-            return 0;"""
+setter_definition = """int ParamSet{name}(const {type} value){{
+    int rc = -1;
+    if ( !(value >= {min} && value < {max}) ){{
+        return rc;
+    }}
 
-n_params_in_category_case = """
-        case {index}:
-            return {n_params};"""
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
+        params_[{index}].value = (uint32_t)value;
+        k_mutex_unlock(&param_mutex);
+        rc = 0;
+    }}
+    return rc;
+}}"""
 
-param_in_category_case = """
-        case {category_index}:
-            switch (parameter_index) {{
-{parameter_cases}
-            }}
-            return -1;"""
-parameter_case = """
-            case {parameter_index}:
-                return {parameter_id};
+parameter_initializer = """
+        params_[{index}].id = {id};
+        strncpy(params_[{index}].name, "{name}", PARAM_NAME_MAX_LEN);
+        params_[{index}].type = {type};
+        params_[{index}].access = {access};
+        strncpy(params_[{index}].description, "{description}", PARAM_DESC_MAX_LEN);
+        params_[{index}].value = {value};
+        params_[{index}].min = {min};
+        params_[{index}].max = {max};
 """
-param_get_name_case = """
-        case {id}:
-            strncpy(name, "{name}", PARAM_NAME_MAX_LEN);
-            return 0;
+
+category_initializer = """
+        categories_[{index}].id = {id};
+        strncpy(categories_[{index}].name, "{name}", PARAM_NAME_MAX_LEN);
+        categories_[{index}].n_params = {n_params_in_category};
+{category_parameter_ptrs}
 """
+category_parameter_ptr = "        categories_[{category_index}].params[{parameter_index}] = &params_[{parameter_ptr}];"
 
 class Configuration:
     """
@@ -422,102 +311,96 @@ class SourceGenerator:
     def generate(self, header_path: Path, source_path: Path):
         enums = []
 
+        get_value_string_funcs = []
+        param_value_string_len = [10] # 10 chars for uint32_t
         for enum_name in self.config.enums:
             enum_values = []
+            get_value_string_type_cases = []
             for member_name in self.config.enums[enum_name]:
                 value = self.config.enums[enum_name][member_name]
                 enum_values.append(enum_value.format(name=member_name, value=value))
+                get_value_string_type_cases.append(get_value_string_type_case.format(
+                    value=value,
+                    string=member_name
+                ))
+                param_value_string_len.append(len(member_name))
 
             enums.append(enum_definition.format(
                 name=enum_name,
                 values='\n'.join(enum_values),
                 n_values=len(enum_values)
             ))
+            get_value_string_funcs.append(get_value_string_func.format(
+                type=f"param_{enum_name}",
+                get_value_string_type_cases="\n".join(get_value_string_type_cases)
+            ))
 
         getter_declarations = []
         setter_declarations = []
         getter_definitions = []
         setter_definitions = []
-        parameters = []
-        initializers = []
-        get_cases = []
-        set_cases = []
-        incr_cases = []
-        decr_cases = []
-        param_get_name_cases = []
-        for param in self.config.parameters:
+        parameter_initializers = []
+        category_initializers = []
+        get_value_string_cases = []
+        id_to_index = {}
+        for i,param in enumerate(self.config.parameters):
+            id_to_index[param] = i
             type = self.config.parameters[param]["Type"]
             name = to_camelcase(self.config.parameters[param]["Name"])
             minimum = None
             maximum = None
             if type in self.config.enums:
-                setter_definitions.append(setter_definition.format(
-                    type=f"param_{type}",
-                    name=name,
-                    validators=f"validate_{type}(value)"
-                ))
                 minimum = 0
                 maximum = f"kParamN_{type} - 1"
             else:
                 minimum = self.config.parameters[param]["Min"]
                 maximum = self.config.parameters[param]["Max"]
-                setter_definitions.append(setter_definition.format(
-                    type=type,
-                    name=name,
-                    validators=f"value >= {minimum} && value <= {maximum}"
-                ))
             default = self.config.parameters[param]["Default"]
             if type in self.config.enums:
                 default = f"kParam{default}"
-                type = f"param_{type}"
-                
-            parameters.append(parameter.format(type=type, name=name))
-            initializers.append(initializer.format(name=name, value=default))
-            getter_declarations.append(getter_declaration.format(type=type, name=name))
-            setter_declarations.append(setter_declaration.format(type=type, name=name))
-            getter_definitions.append(getter_definition.format(type=type, name=name))
-            get_cases.append(get_case.format(id=param, name=name))
-            set_cases.append(set_case.format(id=param, name=name, type=type))
-            incr_cases.append(incr_case.format(
-                id=param,
-                name=name,
-                min=minimum,
-                max=maximum
-            ))
-            decr_cases.append(decr_case.format(
-                id=param,
-                name=name,
-                min=minimum,
-                max=maximum
-            ))
-            param_get_name_cases.append(param_get_name_case.format(id=param, name=self.config.parameters[param]["Name"]))
-            
-        validators = []
-        for type in self.config.enums:
-            validators.append(validator.format(type=type, min=0, max=f"kParamN_{type}"))
-
-        categories = []
-        n_params_in_category_cases = []
-        n_params_in_category = []
-        param_in_category_cases = []
-        for i,name in enumerate(sorted(self.config.categories)):
-            initializers.append(init_category_id.format(id=self.config.categories[name], index=i))
-            initializers.append(init_category_name.format(name=name, index=i))
-            filtered_parameter_ids = [ p["Id"] for p in self.config.parameters.values() if p["Category"] == name ]
-            n_params = len(filtered_parameter_ids)
-            n_params_in_category_cases.append(
-                n_params_in_category_case.format(
+                type_name = f"param_{type}"
+                setter_definitions.append(setter_definition.format(
                     index=i,
-                    n_params=n_params
+                    type=type_name,
+                    name=name,
+                    min=minimum,
+                    max=maximum
                 ))
-            n_params_in_category.append(n_params)
-            parameter_cases = []
-            for alphabetical_index, parameter_id in enumerate(sorted(filtered_parameter_ids)):
-                parameter_cases.append(parameter_case.format(parameter_index=alphabetical_index, parameter_id=parameter_id))
-            param_in_category_cases.append(param_in_category_case.format(
-                category_index=i,
-                parameter_cases="\n".join(parameter_cases)
+                get_value_string_cases.append(get_value_string_case.format(id=param, type=type_name))
+                
+            parameter_initializers.append(parameter_initializer.format(
+                index=i,
+                id=param,
+                name=name,
+                value=default,
+                type="0",#self.config.types[self.config.parameters[param]["Type"]],
+                access=self.config.access_levels[self.config.parameters[param]["AccessLevel"]],
+                description=self.config.parameters[param]["Description"],
+                min=minimum,
+                max=maximum,
             ))
+            getter_declarations.append(getter_declaration.format(type=type_name, name=name))
+            setter_declarations.append(setter_declaration.format(type=type_name, name=name))
+            getter_definitions.append(getter_definition.format(type=type_name, name=name, index=i))
+            
+            
+        categories = []
+        n_params_in_category = []
+        category_initializers = []
+        for i,name in enumerate(sorted(self.config.categories)):
+            filtered_parameters = [ self.config.parameters[key] for key in self.config.parameters
+                                    if self.config.parameters[key]["Category"] == name ]
+            sorted_filtered_parameters = sorted(filtered_parameters, key=lambda d: d["Name"])
+            sorted_filtered_parameters_indices = [ id_to_index[p["Id"]] for p in sorted_filtered_parameters ]
+            n_params = len(sorted_filtered_parameters_indices)
+            category_initializers.append(category_initializer.format(
+                id=self.config.categories[name],
+                index=i,
+                name=name,
+                n_params_in_category=n_params,
+                category_parameter_ptrs="\n".join([category_parameter_ptr.format(category_index=i, parameter_index=p_i, parameter_ptr=p) for p_i,p in enumerate(sorted_filtered_parameters_indices)])
+            ))
+            n_params_in_category.append(n_params)
         
         header_content = header.format(
             enums='\n'.join(enums),
@@ -528,24 +411,20 @@ class SourceGenerator:
             n_categories=len(self.config.categories.keys()),
             category_max_len=max([len(c) for c in self.config.categories.keys()]) + 1, # +1 for null termination
             max_n_params_in_category=max(n_params_in_category),
-            param_name_max_len=max([len(p["Name"]) for p in self.config.parameters.values()])
+            param_name_max_len=max([len(p["Name"]) for p in self.config.parameters.values()]) + 1, # +1 for null termination
+            param_desc_max_len=max([len(p["Description"]) for p in self.config.parameters.values()]) + 1, # +1 for null termination
+            param_value_string_max_len=max(param_value_string_len) + 1, # +1 for null termination
         )
         with open(header_path, 'w') as file_:
             file_.write(header_content)
             
         source_content = source.format(
-            parameters='\n'.join(parameters),
-            initializers='\n'.join(initializers),
+            parameter_initializers='\n'.join(parameter_initializers),
+            category_initializers='\n'.join(category_initializers),
             getter_definitions="\n".join(getter_definitions),
             setter_definitions="\n".join(setter_definitions),
-            validators="\n".join(validators),
-            set_cases="\n".join(set_cases),
-            get_cases="\n".join(get_cases),
-            incr_cases="\n".join(incr_cases),
-            decr_cases="\n".join(decr_cases),
-            n_params_in_category_cases="\n".join(n_params_in_category_cases),
-            param_in_category_cases="\n".join(param_in_category_cases),
-            param_get_name_cases='\n'.join(param_get_name_cases)
+            get_value_string_funcs="\n".join(get_value_string_funcs),
+            get_value_string_cases="\n".join(get_value_string_cases)
         )
         with open(source_path, 'w') as file_:
             file_.write(source_content)
