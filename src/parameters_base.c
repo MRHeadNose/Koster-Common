@@ -1,3 +1,6 @@
+#include "koster-common/parameters_base.h"
+
+#include <stdbool.h>
 #include <string.h>
 #include <zephyr/kernel.h>
 
@@ -27,6 +30,94 @@ int32_t ParamGetValue(const struct param_t* param) {
         k_mutex_unlock(&param_mutex);
     }
     return ret_val;
+}
+
+int32_t ParamGetMinValue(const struct param_t* param) {
+    int32_t ret_val = 0;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
+        if (param != NULL) {
+            ret_val = param->min;
+        }
+        k_mutex_unlock(&param_mutex);
+    }
+    return ret_val;
+}
+
+int32_t ParamGetMaxValue(const struct param_t* param) {
+    int32_t ret_val = 0;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
+        if (param != NULL) {
+            ret_val = param->max;
+        }
+        k_mutex_unlock(&param_mutex);
+    }
+    return ret_val;
+}
+
+int ParamGetExponent(const struct param_t* param) {
+    int ret_val = 0;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
+        if (param != NULL) {
+            ret_val = param->exponent;
+        }
+        k_mutex_unlock(&param_mutex);
+    }
+    return ret_val;
+}
+
+int ParamSetValue(struct param_t* param, const uint32_t value) {
+    int rc = -1;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
+        if (param != NULL) {
+            param->value = value;
+            rc = 0;
+        }
+        k_mutex_unlock(&param_mutex);
+    }
+    return rc;
+}
+
+int ParamIncreaseValue(struct param_t* param) {
+    int rc = -1;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
+        if (param != NULL) {
+            if (param->value == param->max) {
+                param->value = param->min;
+            } else {
+                ++param->value;
+            }
+            rc = 0;
+        }
+        k_mutex_unlock(&param_mutex);
+    }
+    return rc;
+}
+
+int ParamDecreaseValue(struct param_t* param) {
+    int rc = -1;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
+        if (param != NULL) {
+            if (param->value == param->max) {
+                param->value = param->min;
+            } else {
+                --param->value;
+            }
+            rc = 0;
+        }
+        k_mutex_unlock(&param_mutex);
+    }
+    return rc;
+}
+
+bool ParamIsEnum(struct param_t* param) {
+    bool is_enum = false;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
+        if (param != NULL) {
+            is_enum = param->type == kParamTypeEnum;
+        }
+        k_mutex_unlock(&param_mutex);
+    }
+    return is_enum;
 }
 
 unsigned int ParamCategoryGetNParams(const struct param_category_t* category) {
@@ -64,4 +155,12 @@ int ParamGetCategoryName(const struct param_category_t* category, char* buf) {
         k_mutex_unlock(&param_mutex);
     }
     return rc;
+}
+
+int ParamGetCurrentValueString(struct param_t* param, char* buf) {
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
+        return ParamGetValueString(param, buf, param->value);
+        k_mutex_unlock(&param_mutex);
+    }
+    return -1;
 }

@@ -11,6 +11,7 @@
     <Category Id="1" Name="Factory setting" />
     <Category Id="2" Name="Language and units" />
     <Category Id="3" Name="Alarm" />
+    <Category Id="4" Name="Radar" />
   </Categories>
   
   <Enums>
@@ -60,15 +61,17 @@
 
   <Units>
     <Unit Id="0" Name="Celsius" />
+    <Unit Id="1" Name="Meter" />
   </Units>
   
   <Parameter Id="0" Category="Factory setting" Name="Machine type" Type="machine_type_t" AccessLevel="Factory" Description="" Default="Start_Production" />
   <Parameter Id="1" Category="Language and units" Name="Language" Type="language_t" AccessLevel="Advanced" Description="" Default="English" />
   <Parameter Id="3" Category="Alarm" Name="Process alarm" Type="yes_no_t" AccessLevel="Advanced" Description="Issue alarm if temperature is more than 'Process alarm temp'" Default="Yes" />
-  <Parameter Id="49" Category="Alarm" Name="Process alarm temp" Type="uint8_t" Unit="Celsius" Min="5" Max="99" Precision="0" AccessLevel="Advanced" Description="Temperature is displayed in this unit" Default="30" />
+  <Parameter Id="49" Category="Alarm" Name="Process alarm temp" Type="uint8_t" Unit="Celsius" Min="5" Max="99" Exponent="0" AccessLevel="Advanced" Description="Temperature is displayed in this unit" Default="30" />
   <Parameter Id="4" Category="Language and units" Name="Temperature unit" Type="temperature_unit_t" AccessLevel="Advanced" Description="Temperature is displayed in this unit" Default="Celsius" />
+  <Parameter Id="61" Category="Radar" Name="Radar Distance" Type="uint16_t" Min="2" Max="14" Exponent="-1" Unit="Meter" AccessLevel="Factory" Description="" Default="10" />
   
-  <!-- <Parameter ID="0" Category="" Name="" Type="" Min="" Max="" Unit="" Precision="0" AccessLevel="" Description="" /> -->
+  <!-- <Parameter ID="0" Category="" Name="" Type="" Min="" Max="" Unit="" Exponent="0" AccessLevel="" Description="" /> -->
   
   <DefaultOverride MachineType="i5_1G5">
     <DefaultValue ParameterId="0" Value="i5_1G5" />

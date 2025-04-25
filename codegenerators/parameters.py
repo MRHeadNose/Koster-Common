@@ -65,6 +65,7 @@ source = """
 #include "koster-common/parameters.h"
 #include "parameters_private.h"
 #include <string.h>
+#include <stdlib.h>
 
 extern struct k_mutex param_mutex;
 static struct param_t params_[PARAM_NUM_PARAMS];
@@ -99,20 +100,33 @@ int ParamGetCategory(struct param_category_t** category, const unsigned int inde
     return rc;
 }}
 
-int ParamGetCurrentValueString(struct param_t* param, char* buf) {{
+int ParamGetValueString(struct param_t* param, char* buf, const int32_t value) {{
     int rc = -1;
+    if (param == NULL) {{
+        return rc;
+    }}
+
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
-        switch (param->id) {{
+        if (value >= param->min && value <= param->max ) {{
+            switch (param->id) {{
 {get_value_string_cases}
-        default:
-            snprintf(buf, PARAM_VALUE_STRING_MAX_LEN, "%i", param->value);
-            rc = 0;
-            break;
+            default:
+                if ( param->exponent >= 0 ) {{
+                    snprintf(buf, PARAM_VALUE_STRING_MAX_LEN, "%i", value);
+                }} else {{
+                    char fmt_buf[PARAM_VALUE_STRING_MAX_LEN];
+                    snprintf(fmt_buf, PARAM_VALUE_STRING_MAX_LEN, "%%.%uf", abs(param->exponent));
+                    snprintf(buf, PARAM_VALUE_STRING_MAX_LEN, fmt_buf, value*pow(10.0, param->exponent));
+                }}
+                rc = 0;
+                break;
+            }}
         }}
         k_mutex_unlock(&param_mutex);
     }}
     return rc;
 }}
+
 """
 get_value_string_func = """
 int get_value_string_{type}(const int32_t value, char *buf){{
@@ -126,9 +140,9 @@ get_value_string_type_case = """
             strncpy(buf, "{string}", PARAM_VALUE_STRING_MAX_LEN);
             return 0;"""
 get_value_string_case = """
-        case {id}:
-            rc = get_value_string_{type}(param->value, buf);
-            break;"""
+            case {id}:
+                rc = get_value_string_{type}(value, buf);
+                break;"""
 
 getter_definition = """{type} ParamGet{name}(){{
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
@@ -162,6 +176,7 @@ parameter_initializer = """
         params_[{index}].value = {value};
         params_[{index}].min = {min};
         params_[{index}].max = {max};
+        params_[{index}].exponent = {exponent};
 """
 
 category_initializer = """
@@ -248,8 +263,8 @@ class Configuration:
                     error_txt = f'Unknown Unit "{self.parameters[id]["Unit"]}" for Parameter with Id "{id}"'
                     raise RuntimeError(error_txt)
                 
-                if not "Precision" in self.parameters[id]:
-                    error_txt = f'Attribute Precision (required by attribute Unit) missing for Parameter for Parameter with Id "{id}"'
+                if not "Exponent" in self.parameters[id]:
+                    error_txt = f'Attribute Exponent (required by attribute Unit) missing for Parameter for Parameter with Id "{id}"'
                     raise RuntimeError(error_txt)
                 
                 if not "Min" in self.parameters[id]:
@@ -260,15 +275,15 @@ class Configuration:
                     error_txt = f'Attribute Max (required by attribute Unit) missing for Parameter for Parameter with Id "{id}"'
                     raise RuntimeError(error_txt)
 
-                precision = self.parameters[id]["Precision"]
+                exponent = self.parameters[id]["Exponent"]
                 try:
-                    int(precision)
+                    int(exponent)
                 except ValueError:
-                    error_txt = f'Attribute Precision ("{precision}") must be an integer (Parameter with Id "{id}")'
+                    error_txt = f'Attribute Exponent ("{exponent}") must be an integer (Parameter with Id "{id}")'
                     raise RuntimeError(error_txt)
                 
-            elif any([attrib in self.parameters[id] for attrib in ["Min", "Max", "Precision"]]):
-                error_txt = f'Parameter with Id "{id}" must have all or none of attributes "Min", "Max", "Precision", "Unit"'
+            elif any([attrib in self.parameters[id] for attrib in ["Min", "Max", "Exponent"]]):
+                error_txt = f'Parameter with Id "{id}" must have all or none of attributes "Min", "Max", "Exponent", "Unit"'
                 raise RuntimeError(error_txt)
 
             
@@ -288,7 +303,7 @@ class Configuration:
                     error_txt = f'Attribute Max ("{maximum}") must be an integer for Type "{type}" (Parameter with Id "{id}")'
                     raise RuntimeError(error_txt)
 
-                if maximum <= minimum:
+                if int(maximum) <= int(minimum):
                     error_txt = f'Attribute Max ("{maximum}") must be larger than Min ("{minimum}") (Parameter with Id "{id}")'
                     raise RuntimeError(error_txt)
 
@@ -373,11 +388,12 @@ class SourceGenerator:
                 id=param,
                 name=name,
                 value=default,
-                type="0",#self.config.types[self.config.parameters[param]["Type"]],
+                type="kParamTypeEnum" if type in self.config.enums else "kParamTypeNumeric",
                 access=self.config.access_levels[self.config.parameters[param]["AccessLevel"]],
                 description=self.config.parameters[param]["Description"],
                 min=minimum,
                 max=maximum,
+                exponent=self.config.parameters[param]["Exponent"] if "Exponent" in self.config.parameters[param] else 0
             ))
             getter_declarations.append(getter_declaration.format(type=type_name, name=name))
             setter_declarations.append(setter_declaration.format(type=type_name, name=name))
@@ -413,7 +429,7 @@ class SourceGenerator:
             max_n_params_in_category=max(n_params_in_category),
             param_name_max_len=max([len(p["Name"]) for p in self.config.parameters.values()]) + 1, # +1 for null termination
             param_desc_max_len=max([len(p["Description"]) for p in self.config.parameters.values()]) + 1, # +1 for null termination
-            param_value_string_max_len=max(param_value_string_len) + 1, # +1 for null termination
+            param_value_string_max_len=max(param_value_string_len) + 2, # +1 for null termination, +1 for decimal
         )
         with open(header_path, 'w') as file_:
             file_.write(header_content)
