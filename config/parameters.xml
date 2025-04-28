@@ -7,11 +7,10 @@
   </AccessLevels>
   
   <Categories>
-    <Category Id="0" Name="Miscellaneous" />
-    <Category Id="1" Name="Factory setting" />
-    <Category Id="2" Name="Language and units" />
-    <Category Id="3" Name="Alarm" />
-    <Category Id="4" Name="Radar" />
+    <Category Id="0" Name="Factory setting" />
+    <Category Id="1" Name="Language and units" />
+    <Category Id="2" Name="Alarm" />
+    <Category Id="3" Name="Radar" />
   </Categories>
   
   <Enums>

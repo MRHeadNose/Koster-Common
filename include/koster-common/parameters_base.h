@@ -70,6 +70,15 @@ int ParamIncreaseValue(struct param_t* param);
 int ParamDecreaseValue(struct param_t* param);
 
 /**
+ * Set parameter value
+ *
+ * @return 0 on success, -1 on failure
+ * @param param  pointer to the parameter
+ * @param value  the value to set
+ */
+int ParamSetValue(struct param_t* param, const uint32_t value);
+
+/**
  * Check if parameter is an enum
  *
  * @return true if parameter is an enum, false otherwise

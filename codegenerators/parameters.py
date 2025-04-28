@@ -243,6 +243,11 @@ class Configuration:
 
             self.parameters[id] = element.attrib
 
+        for category in self.categories:
+            if len([1 for p in self.parameters.values() if p["Category"] == category]) == 0:
+                error_txt = f'Category "{category}" has no parameters'
+                raise RuntimeError(error_txt)
+
         # parameter validation
         for id in self.parameters:
             

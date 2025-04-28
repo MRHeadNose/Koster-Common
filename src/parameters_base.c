@@ -65,18 +65,6 @@ int ParamGetExponent(const struct param_t* param) {
     return ret_val;
 }
 
-int ParamSetValue(struct param_t* param, const uint32_t value) {
-    int rc = -1;
-    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
-        if (param != NULL) {
-            param->value = value;
-            rc = 0;
-        }
-        k_mutex_unlock(&param_mutex);
-    }
-    return rc;
-}
-
 int ParamIncreaseValue(struct param_t* param) {
     int rc = -1;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
@@ -102,6 +90,18 @@ int ParamDecreaseValue(struct param_t* param) {
             } else {
                 --param->value;
             }
+            rc = 0;
+        }
+        k_mutex_unlock(&param_mutex);
+    }
+    return rc;
+}
+
+int ParamSetValue(struct param_t* param, const uint32_t value) {
+    int rc = -1;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
+        if (param != NULL && value >= param->min && value <= param->max) {
+            param->value = value;
             rc = 0;
         }
         k_mutex_unlock(&param_mutex);
