@@ -65,15 +65,40 @@ source = """
 #include "koster-common/parameters.h"
 #include "parameters_private.h"
 #include <string.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/settings/settings.h>
 #include <stdlib.h>
+LOG_MODULE_DECLARE(koster_common);
 
 extern struct k_mutex param_mutex;
 static struct param_t params_[PARAM_NUM_PARAMS];
 static struct param_category_t categories_[PARAM_NUM_CATEGORIES];
+static struct settings_handler handler_;
 
 {get_value_string_funcs}
 
-int ParamInit(){{
+static int handle_set(const char* name, size_t len, settings_read_cb read_cb, void* cb_arg) {{
+    const char* next;
+    size_t name_len;
+
+    name_len = settings_name_next(name, &next);
+
+    {handle_set_cases}
+
+    return -ENOENT;
+}}
+
+static int handle_export(int (*storage_func)(const char* name, const void* value, size_t val_len)) {{
+    int ret = -EBUSY;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
+{handle_export_cases}
+        k_mutex_unlock(&param_mutex);
+    }}
+    return ret;
+}}
+
+static int load_defaults(){{
     int rc = -1;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
 {parameter_initializers}
@@ -82,6 +107,32 @@ int ParamInit(){{
         rc = 0;
     }}
     return rc;
+}}
+
+int ParamInit(){{
+    k_mutex_init(&param_mutex);
+
+    int rc = load_defaults();
+
+    handler_.name = "parameters";
+    handler_.h_get = NULL;
+    handler_.h_set = handle_set;
+    handler_.h_commit = NULL;
+    handler_.h_export = handle_export;
+
+    rc = settings_register(&handler_);
+    if (rc != 0) {{
+        LOG_ERR("[recipe] settings_register failed (err %d)", rc);
+        return -1;
+    }}
+
+    rc = settings_load();
+    if (rc != 0) {{
+        LOG_ERR("[recipe] settings_load failed (err %d)", rc);
+        return -1;
+    }}
+
+    return 0;
 }}
 
 {getter_definitions}
@@ -126,6 +177,21 @@ int ParamGetValueString(struct param_t* param, char* buf, const int32_t value) {
     }}
     return rc;
 }}
+
+int ParamSave(struct param_t* param) {{
+    int rc = -1;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
+        if ( param == NULL ) {{
+            return -1;
+        }}
+        switch (param->id) {{
+{settings_save_cases}
+        }}
+        k_mutex_unlock(&param_mutex);
+    }}
+    return rc;
+}}
+
 
 """
 get_value_string_func = """
@@ -186,6 +252,40 @@ category_initializer = """
 {category_parameter_ptrs}
 """
 category_parameter_ptr = "        categories_[{category_index}].params[{parameter_index}] = &params_[{parameter_ptr}];"
+
+handle_set_case = """
+    if (!strncmp(name, "{name}", name_len)) {{
+        if (len != sizeof(uint32_t)) {{
+            LOG_ERR("[parameters] handle_set: read size (%i) different from size of uint32_t (parameter {name})", len);
+            return -EINVAL;
+        }}
+
+        int rc = -EBUSY;
+        if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
+            rc = read_cb(cb_arg, &params_[{index}].value, sizeof(uint32_t));
+            k_mutex_unlock(&param_mutex);
+            if (rc >= 0) {{
+                return 0;
+            }}
+        }}
+
+        return rc;
+    }}"""
+handle_export_case = """
+        ret = storage_func("parameters/{name}", &params_[{index}].value, sizeof(uint32_t));
+        if ( ret != 0 ) {{
+            k_mutex_unlock(&param_mutex);
+            return ret;
+        }}
+    """
+settings_save_case = """
+        case {id}:
+            rc = settings_save_one("parameters/{name}", &params_[{index}].value, sizeof(uint32_t));
+            if ( rc != 0 ) {{
+                LOG_ERR("[parameters] Unable to save parameter {name}");
+            }}
+            break;
+"""
 
 class Configuration:
     """
@@ -363,6 +463,9 @@ class SourceGenerator:
         category_initializers = []
         get_value_string_cases = []
         id_to_index = {}
+        handle_set_cases = []
+        handle_export_cases = []
+        settings_save_cases = []
         for i,param in enumerate(self.config.parameters):
             id_to_index[param] = i
             type = self.config.parameters[param]["Type"]
@@ -403,7 +506,9 @@ class SourceGenerator:
             getter_declarations.append(getter_declaration.format(type=type_name, name=name))
             setter_declarations.append(setter_declaration.format(type=type_name, name=name))
             getter_definitions.append(getter_definition.format(type=type_name, name=name, index=i))
-            
+            handle_set_cases.append(handle_set_case.format(name=name, index=i))
+            handle_export_cases.append(handle_export_case.format(name=name, index=i))
+            settings_save_cases.append(settings_save_case.format(name=name, index=i, id=param))
             
         categories = []
         n_params_in_category = []
@@ -445,7 +550,10 @@ class SourceGenerator:
             getter_definitions="\n".join(getter_definitions),
             setter_definitions="\n".join(setter_definitions),
             get_value_string_funcs="\n".join(get_value_string_funcs),
-            get_value_string_cases="\n".join(get_value_string_cases)
+            get_value_string_cases="\n".join(get_value_string_cases),
+            handle_export_cases="\n".join(handle_export_cases),
+            handle_set_cases="\n".join(handle_set_cases),
+            settings_save_cases="\n".join(settings_save_cases)
         )
         with open(source_path, 'w') as file_:
             file_.write(source_content)

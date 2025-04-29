@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <zephyr/kernel.h>
+#include <zephyr/settings/settings.h>
 
 #include "koster-common/parameters.h"
 #include "parameters_private.h"

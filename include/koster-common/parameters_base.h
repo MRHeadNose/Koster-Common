@@ -160,4 +160,12 @@ int ParamGetValueString(struct param_t* param, char* buf, const int32_t value);
  */
 int ParamGetExponent(const struct param_t* param);
 
+/**
+ * Save a parameter to persistent storage
+ *
+ * @return 0 on success, -1 on failure
+ * @param param  pointer to the parameter
+ */
+int ParamSave(struct param_t* param);
+
 #endif
