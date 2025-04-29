@@ -257,7 +257,7 @@ category_parameter_ptr = "        categories_[{category_index}].params[{paramete
 handle_set_case = """
     if (!strncmp(name, "{name}", name_len)) {{
         if (len != sizeof(int32_t)) {{
-            LOG_ERR("[parameters] handle_set: read size (%lo) different from size of int32_t (parameter {name})", len);
+            LOG_ERR("[parameters] handle_set: read size (%o) different from size of int32_t (parameter {name})", len);
             return -EINVAL;
         }}
 
