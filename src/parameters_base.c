@@ -86,8 +86,8 @@ int ParamDecreaseValue(struct param_t* param) {
     int rc = -1;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
         if (param != NULL) {
-            if (param->value == param->max) {
-                param->value = param->min;
+            if (param->value == param->min) {
+                param->value = param->max;
             } else {
                 --param->value;
             }

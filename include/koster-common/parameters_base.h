@@ -17,15 +17,6 @@ struct param_category_t;
 int ParamInit();
 
 /**
- * Get a parameter by id
- *
- * @return -1 on failure, 0 on success
- * @param param  pointer to the parameter pointer that will be filled when loading.
- * @param id     the ID of the parameter to load;
- */
-int ParamGet(struct param_t** param, const unsigned int id);
-
-/**
  * Get parameter value
  *
  * @return the value of the parameter

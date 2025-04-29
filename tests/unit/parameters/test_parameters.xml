@@ -25,7 +25,7 @@
   </Units>
   
   <Parameter Id="0" Category="Cat" Name="EnumParam" Type="enum_t" AccessLevel="Foo" Description="" Default="Value1" />
-  <Parameter Id="10" Category="Ape" Name="UInt8Param" Type="uint8_t" Min="100" Max="200" Unit="Unit0" Precision="0" AccessLevel="Bar" Description="" Default="123" />
-  <Parameter Id="2" Category="B" Name="Int32Param" Type="int32_t" Min="1000000" Max="2000000" Unit="Unit1" Precision="-6" AccessLevel="Foo" Description="" Default="1337000" />
+  <Parameter Id="10" Category="Ape" Name="UInt8Param" Type="uint8_t" Min="100" Max="200" Exponent="0" Unit="Unit0" AccessLevel="Bar" Description="" Default="123" />
+  <Parameter Id="2" Category="B" Name="Int32Param" Type="int32_t" Min="1000000" Max="2000000" Exponent="-6" Unit="Unit1" AccessLevel="Foo" Description="" Default="1337000" />
   
 </Parameters>

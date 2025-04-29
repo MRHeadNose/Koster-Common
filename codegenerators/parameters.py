@@ -69,6 +69,7 @@ source = """
 #include <zephyr/logging/log.h>
 #include <zephyr/settings/settings.h>
 #include <stdlib.h>
+#include <math.h>
 LOG_MODULE_DECLARE(koster_common);
 
 extern struct k_mutex param_mutex;
@@ -98,7 +99,7 @@ static int handle_export(int (*storage_func)(const char* name, const void* value
     return ret;
 }}
 
-static int load_defaults(){{
+static int load_defaults() {{
     int rc = -1;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
 {parameter_initializers}
@@ -109,7 +110,7 @@ static int load_defaults(){{
     return rc;
 }}
 
-int ParamInit(){{
+int ParamInit() {{
     k_mutex_init(&param_mutex);
 
     int rc = load_defaults();
@@ -195,7 +196,7 @@ int ParamSave(struct param_t* param) {{
 
 """
 get_value_string_func = """
-int get_value_string_{type}(const int32_t value, char *buf){{
+int get_value_string_{type}(const int32_t value, char *buf) {{
     switch (value) {{
         {get_value_string_type_cases}
     }}
@@ -212,21 +213,21 @@ get_value_string_case = """
 
 getter_definition = """{type} ParamGet{name}(){{
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
-        uint32_t ret = params_[{index}].value;
+        int32_t ret = params_[{index}].value;
         k_mutex_unlock(&param_mutex);
-        return ret;
+        return ({type})ret;
     }}
-    return 0;
+    return ({type})0;
 }}"""
 
-setter_definition = """int ParamSet{name}(const {type} value){{
+setter_definition = """int ParamSet{name}(const {type} value) {{
     int rc = -1;
-    if ( !(value >= {min} && value < {max}) ){{
+    if ( !(value >= {min} && value <= {max}) ){{
         return rc;
     }}
 
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
-        params_[{index}].value = (uint32_t)value;
+        params_[{index}].value = (int32_t)value;
         k_mutex_unlock(&param_mutex);
         rc = 0;
     }}
@@ -255,14 +256,14 @@ category_parameter_ptr = "        categories_[{category_index}].params[{paramete
 
 handle_set_case = """
     if (!strncmp(name, "{name}", name_len)) {{
-        if (len != sizeof(uint32_t)) {{
-            LOG_ERR("[parameters] handle_set: read size (%i) different from size of uint32_t (parameter {name})", len);
+        if (len != sizeof(int32_t)) {{
+            LOG_ERR("[parameters] handle_set: read size (%lo) different from size of int32_t (parameter {name})", len);
             return -EINVAL;
         }}
 
         int rc = -EBUSY;
         if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
-            rc = read_cb(cb_arg, &params_[{index}].value, sizeof(uint32_t));
+            rc = read_cb(cb_arg, &params_[{index}].value, sizeof(int32_t));
             k_mutex_unlock(&param_mutex);
             if (rc >= 0) {{
                 return 0;
@@ -272,7 +273,7 @@ handle_set_case = """
         return rc;
     }}"""
 handle_export_case = """
-        ret = storage_func("parameters/{name}", &params_[{index}].value, sizeof(uint32_t));
+        ret = storage_func("parameters/{name}", &params_[{index}].value, sizeof(int32_t));
         if ( ret != 0 ) {{
             k_mutex_unlock(&param_mutex);
             return ret;
@@ -280,7 +281,7 @@ handle_export_case = """
     """
 settings_save_case = """
         case {id}:
-            rc = settings_save_one("parameters/{name}", &params_[{index}].value, sizeof(uint32_t));
+            rc = settings_save_one("parameters/{name}", &params_[{index}].value, sizeof(int32_t));
             if ( rc != 0 ) {{
                 LOG_ERR("[parameters] Unable to save parameter {name}");
             }}
@@ -432,7 +433,7 @@ class SourceGenerator:
         enums = []
 
         get_value_string_funcs = []
-        param_value_string_len = [10] # 10 chars for uint32_t
+        param_value_string_len = [10] # 10 chars for int32_t
         for enum_name in self.config.enums:
             enum_values = []
             get_value_string_type_cases = []
@@ -479,18 +480,19 @@ class SourceGenerator:
                 minimum = self.config.parameters[param]["Min"]
                 maximum = self.config.parameters[param]["Max"]
             default = self.config.parameters[param]["Default"]
+            type_name = f"{type}"
             if type in self.config.enums:
                 default = f"kParam{default}"
                 type_name = f"param_{type}"
-                setter_definitions.append(setter_definition.format(
-                    index=i,
-                    type=type_name,
-                    name=name,
-                    min=minimum,
-                    max=maximum
-                ))
                 get_value_string_cases.append(get_value_string_case.format(id=param, type=type_name))
                 
+            setter_definitions.append(setter_definition.format(
+                index=i,
+                type=type_name,
+                name=name,
+                min=minimum,
+                max=maximum
+            ))
             parameter_initializers.append(parameter_initializer.format(
                 index=i,
                 id=param,

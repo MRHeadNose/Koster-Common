@@ -9,173 +9,261 @@ DEFINE_FFF_GLOBALS;
 class ParametersTests : public testing::Test {
   protected:
     void SetUp() override { ParamInit(); };
+    void GetEnumParam(struct param_t** param) {
+        struct param_category_t* category;
+        ASSERT_EQ(ParamGetCategory(&category, 2), 0);  // Cat
+        ASSERT_EQ(ParamCategoryGetNParams(category), 1);
+        ASSERT_EQ(ParamCategoryGetParam(category, param, 0), 0);  // EnumParam
+    }
+    void GetInt32Param(struct param_t** param) {
+        struct param_category_t* category;
+        ASSERT_EQ(ParamGetCategory(&category, 1), 0);  // B
+        ASSERT_EQ(ParamCategoryGetNParams(category), 1);
+        ASSERT_EQ(ParamCategoryGetParam(category, param, 0), 0);  // Int32Param
+    }
+    void GetUInt8Param(struct param_t** param) {
+        struct param_category_t* category;
+        ASSERT_EQ(ParamGetCategory(&category, 0), 0);  // Ape
+        ASSERT_EQ(ParamCategoryGetNParams(category), 1);
+        ASSERT_EQ(ParamCategoryGetParam(category, param, 0), 0);  // UInt8Param
+    }
 };
 
 TEST_F(ParametersTests, Get_ReturnsDefault) {
-    EXPECT_EQ(ParamGetEnumparam(), kParamValue1);
-    EXPECT_EQ(ParamGetUint8param(), 123);
-    EXPECT_EQ(ParamGetInt32param(), 1337000);
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
+    ASSERT_EQ(ParamGetUint8param(), 123);
+    ASSERT_EQ(ParamGetInt32param(), 1337000);
 }
 
-TEST_F(ParametersTests, SetGetEnumparam) {
-    EXPECT_EQ(ParamSetEnumparam(kParamValue0), 0);
-    EXPECT_EQ(ParamGetEnumparam(), kParamValue0);
+TEST_F(ParametersTests, GetSetUInt8ParamByName) {
+    // New, valid value
+    ASSERT_EQ(ParamSetUint8param(150), 0);
+    ASSERT_EQ(ParamGetUint8param(), 150);
+
+    // Out of range
+    ASSERT_EQ(ParamSetUint8param(99), -1);
+    ASSERT_EQ(ParamSetUint8param(201), -1);
+    ASSERT_EQ(ParamGetUint8param(), 150);
+
+    // Valid, minimum
+    ASSERT_EQ(ParamSetUint8param(100), 0);
+    ASSERT_EQ(ParamGetUint8param(), 100);
+
+    // Valid, maximum
+    ASSERT_EQ(ParamSetUint8param(200), 0);
+    ASSERT_EQ(ParamGetUint8param(), 200);
 }
 
-TEST_F(ParametersTests, SetEnumParamOutOfRange_ReturnNegative) {
-    EXPECT_EQ(ParamSetEnumparam(kParamN_enum_t), -1);
-    EXPECT_EQ(ParamGetEnumparam(), kParamValue1);
+TEST_F(ParametersTests, GetSetInt32ParamByName) {
+    // New, valid value
+    ASSERT_EQ(ParamSetInt32param(1500000), 0);
+    ASSERT_EQ(ParamGetInt32param(), 1500000);
+
+    // Out of range
+    ASSERT_EQ(ParamSetInt32param(999999), -1);
+    ASSERT_EQ(ParamSetInt32param(2000001), -1);
+    ASSERT_EQ(ParamGetInt32param(), 1500000);
 }
 
-TEST_F(ParametersTests, SetGetInt32param) {
-    EXPECT_EQ(ParamSetInt32param(1999999), 0);
-    EXPECT_FLOAT_EQ(ParamGetInt32param(), 1999999);
+TEST_F(ParametersTests, GetSetEnumParamByName) {
+    // New, valid value
+    ASSERT_EQ(ParamSetEnumparam(kParamValue2), 0);
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue2);
+
+    // Out of range
+    ASSERT_EQ(ParamSetEnumparam(kParamN_enum_t), -1);
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue2);
 }
 
-TEST_F(ParametersTests, SetInt32ParamOutOfRange_ReturnNegative) {
-    EXPECT_EQ(ParamSetInt32param(999999), -1);
-    EXPECT_EQ(ParamGetInt32param(), 1337000);
-    EXPECT_EQ(ParamSetInt32param(2000001), -1);
-    EXPECT_EQ(ParamGetInt32param(), 1337000);
+TEST_F(ParametersTests, GetSetUInt8ParamFromCategory) {
+    struct param_category_t* category;
+    ASSERT_EQ(ParamGetCategory(&category, 0), 0);  // Ape
+    ASSERT_EQ(ParamCategoryGetNParams(category), 1);
+    struct param_t* param;
+    ASSERT_EQ(ParamCategoryGetParam(category, &param, 0), 0);  // UInt8param
+
+    // New, valid value
+    ASSERT_EQ(ParamSetValue(param, 150), 0);
+    ASSERT_EQ(ParamGetValue(param), 150);
+
+    // Out of range
+    ASSERT_EQ(ParamSetValue(param, 99), -1);
+    ASSERT_EQ(ParamSetValue(param, 201), -1);
+    ASSERT_EQ(ParamGetValue(param), 150);
 }
 
-TEST_F(ParametersTests, SetGetUInt8param) {
-    EXPECT_EQ(ParamSetUint8param(150), 0);
-    EXPECT_EQ(ParamGetUint8param(), 150);
+TEST_F(ParametersTests, GetSetInt32ParamFromCategory) {
+    struct param_category_t* category;
+    ASSERT_EQ(ParamGetCategory(&category, 1), 0);  // B
+    ASSERT_EQ(ParamCategoryGetNParams(category), 1);
+    struct param_t* param;
+    ASSERT_EQ(ParamCategoryGetParam(category, &param, 0), 0);  // Int32Param
+
+    // New, valid value
+    ASSERT_EQ(ParamSetValue(param, 1500000), 0);
+    ASSERT_EQ(ParamGetValue(param), 1500000);
+
+    // Out of range
+    ASSERT_EQ(ParamSetValue(param, 999999), -1);
+    ASSERT_EQ(ParamSetValue(param, 2000001), -1);
+    ASSERT_EQ(ParamGetValue(param), 1500000);
 }
 
-TEST_F(ParametersTests, SetUint8ParamOutOfRange_ReturnNegative) {
-    EXPECT_EQ(ParamSetUint8param(99), -1);
-    EXPECT_EQ(ParamSetUint8param(201), -1);
-    EXPECT_EQ(ParamGetUint8param(), 123);
+TEST_F(ParametersTests, GetSetEnumParamFromCategory) {
+    struct param_category_t* category;
+    ASSERT_EQ(ParamGetCategory(&category, 2), 0);  // Cat
+    ASSERT_EQ(ParamCategoryGetNParams(category), 1);
+    struct param_t* param;
+    ASSERT_EQ(ParamCategoryGetParam(category, &param, 0), 0);  // EnumParam
+
+    // New, valid value
+    ASSERT_EQ(ParamSetValue(param, (int32_t)kParamValue2), 0);
+    ASSERT_EQ(ParamGetValue(param), (int32_t)kParamValue2);
+
+    // Out of range
+    ASSERT_EQ(ParamSetValue(param, (int32_t)kParamN_enum_t), -1);
+    ASSERT_EQ(ParamSetValue(param, -1), -1);
+    ASSERT_EQ(ParamGetValue(param), (int32_t)kParamValue2);
 }
 
-TEST_F(ParametersTests, GetCategoryNameAlpha) {
-    char name[PARAM_CATEGORY_NAME_MAX_LEN];
-    EXPECT_EQ(ParamGetCategoryNameAlpha(0, name), 0);
-    EXPECT_EQ(std::string(name), "Ape");
-    EXPECT_EQ(ParamGetCategoryNameAlpha(1, name), 0);
-    EXPECT_EQ(std::string(name), "B");
-    EXPECT_EQ(ParamGetCategoryNameAlpha(2, name), 0);
-    EXPECT_EQ(std::string(name), "Cat");
-    EXPECT_EQ(ParamGetCategoryNameAlpha(3, name), -1);
+TEST_F(ParametersTests, IncreaseEnumParam) {
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
+    struct param_t* param;
+    GetEnumParam(&param);
+    ASSERT_EQ(ParamIncreaseValue(param), 0);
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue2);
 }
 
-TEST_F(ParametersTests, GetById_ReturnsDefaultValues) {
-    int32_t value;
-    EXPECT_EQ(ParamGet(0, &value), 0);
-    EXPECT_EQ(value, kParamValue1);
-
-    EXPECT_EQ(ParamGet(10, &value), 0);
-    EXPECT_EQ(value, 123);
-
-    EXPECT_EQ(ParamGet(2, &value), 0);
-    EXPECT_EQ(value, 1337000);
+TEST_F(ParametersTests, IncreaseEnumParam_Wrap) {
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
+    struct param_t* param;
+    GetEnumParam(&param);
+    ASSERT_EQ(ParamSetEnumparam(kParamValue2), 0);
+    ASSERT_EQ(ParamIncreaseValue(param), 0);
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue0);
 }
 
-TEST_F(ParametersTests, GetByIdIndexOutOfRange_ReturnsNegative) {
-    int32_t value;
-    EXPECT_EQ(ParamGet(-1, &value), -1);
-    EXPECT_EQ(ParamGet(3, &value), -1);
-    EXPECT_EQ(ParamGet(11, &value), -1);
+TEST_F(ParametersTests, DecreaseEnumParam) {
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
+    struct param_t* param;
+    GetEnumParam(&param);
+    ASSERT_EQ(ParamDecreaseValue(param), 0);
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue0);
 }
 
-TEST_F(ParametersTests, SetById_GetReturnsNewValues) {
-    EXPECT_EQ(ParamSet(0, kParamValue0), 0);
-    EXPECT_EQ(ParamSet(10, 124), 0);
-    EXPECT_EQ(ParamSet(2, 1337001), 0);
-
-    int32_t value;
-    EXPECT_EQ(ParamGet(0, &value), 0);
-    EXPECT_EQ(value, kParamValue0);
-
-    EXPECT_EQ(ParamGet(10, &value), 0);
-    EXPECT_EQ(value, 124);
-
-    EXPECT_EQ(ParamGet(2, &value), 0);
-    EXPECT_EQ(value, 1337001);
+TEST_F(ParametersTests, DecreaseEnumParam_Wrap) {
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
+    struct param_t* param;
+    GetEnumParam(&param);
+    ASSERT_EQ(ParamSetEnumparam(kParamValue0), 0);
+    ASSERT_EQ(ParamDecreaseValue(param), 0);
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue2);
 }
 
-TEST_F(ParametersTests, SetEnumParamByIdOutOfRange_ReturnNegative) { EXPECT_EQ(ParamSet(0, kParamN_enum_t), -1); }
-
-TEST_F(ParametersTests, SetInt32ParamByIdOutOfRange_ReturnNegative) {
-    EXPECT_EQ(ParamSet(2, 999999), -1);
-    EXPECT_EQ(ParamSet(2, 2000001), -1);
+TEST_F(ParametersTests, IncreaseUInt8Param) {
+    ASSERT_EQ(ParamGetUint8param(), 123);
+    struct param_t* param;
+    GetUInt8Param(&param);
+    ASSERT_EQ(ParamIncreaseValue(param), 0);
+    ASSERT_EQ(ParamGetUint8param(), 124);
 }
 
-TEST_F(ParametersTests, SetUint8ParamByIdOutOfRange_ReturnNegative) {
-    EXPECT_EQ(ParamSet(10, 99), -1);
-    EXPECT_EQ(ParamSet(10, 201), -1);
+TEST_F(ParametersTests, IncreaseUInt8Param_Wrap) {
+    ASSERT_EQ(ParamGetUint8param(), 123);
+    struct param_t* param;
+    GetUInt8Param(&param);
+    ASSERT_EQ(ParamSetUint8param(200), 0);
+    ASSERT_EQ(ParamIncreaseValue(param), 0);
+    ASSERT_EQ(ParamGetUint8param(), 100);
 }
 
-TEST_F(ParametersTests, IncrEnumParam) {
-    EXPECT_EQ(ParamGetEnumparam(), kParamValue1);
-    EXPECT_EQ(ParamIncr(0), 0);
-    EXPECT_EQ(ParamGetEnumparam(), kParamValue2);
+TEST_F(ParametersTests, DecreaseUInt8Param) {
+    ASSERT_EQ(ParamGetUint8param(), 123);
+    struct param_t* param;
+    GetUInt8Param(&param);
+    ASSERT_EQ(ParamDecreaseValue(param), 0);
+    ASSERT_EQ(ParamGetUint8param(), 122);
 }
 
-TEST_F(ParametersTests, IncrEnumParam_Wrap) {
-    EXPECT_EQ(ParamSetEnumparam(kParamValue2), 0);
-    EXPECT_EQ(ParamIncr(0), 0);
-    EXPECT_EQ(ParamGetEnumparam(), kParamValue0);
+TEST_F(ParametersTests, DecreaseUInt8Param_Wrap) {
+    ASSERT_EQ(ParamGetUint8param(), 123);
+    struct param_t* param;
+    GetUInt8Param(&param);
+    ASSERT_EQ(ParamSetUint8param(100), 0);
+    ASSERT_EQ(ParamDecreaseValue(param), 0);
+    ASSERT_EQ(ParamGetUint8param(), 200);
 }
 
-TEST_F(ParametersTests, DecrEnumParam) {
-    EXPECT_EQ(ParamGetEnumparam(), kParamValue1);
-    EXPECT_EQ(ParamDecr(0), 0);
-    EXPECT_EQ(ParamGetEnumparam(), kParamValue0);
+TEST_F(ParametersTests, IncreaseInt32Param) {
+    ASSERT_EQ(ParamGetInt32param(), 1337000);
+    struct param_t* param;
+    GetInt32Param(&param);
+    ASSERT_EQ(ParamIncreaseValue(param), 0);
+    ASSERT_EQ(ParamGetInt32param(), 1337001);
 }
 
-TEST_F(ParametersTests, DecrEnumParam_Wrap) {
-    EXPECT_EQ(ParamSetEnumparam(kParamValue0), 0);
-    EXPECT_EQ(ParamDecr(0), 0);
-    EXPECT_EQ(ParamGetEnumparam(), kParamValue2);
+TEST_F(ParametersTests, IncreaseInt32Param_Wrap) {
+    ASSERT_EQ(ParamGetInt32param(), 1337000);
+    struct param_t* param;
+    GetInt32Param(&param);
+    ASSERT_EQ(ParamSetInt32param(2000000), 0);
+    ASSERT_EQ(ParamIncreaseValue(param), 0);
+    ASSERT_EQ(ParamGetInt32param(), 1000000);
 }
 
-TEST_F(ParametersTests, IncrUint8Param) {
-    EXPECT_EQ(ParamGetUint8param(), 123);
-    EXPECT_EQ(ParamIncr(10), 0);
-    EXPECT_EQ(ParamGetUint8param(), 124);
+TEST_F(ParametersTests, DecreaseInt32Param) {
+    ASSERT_EQ(ParamGetInt32param(), 1337000);
+    struct param_t* param;
+    GetInt32Param(&param);
+    ASSERT_EQ(ParamDecreaseValue(param), 0);
+    ASSERT_EQ(ParamGetInt32param(), 1336999);
 }
 
-TEST_F(ParametersTests, IncrUint8Param_Wrap) {
-    EXPECT_EQ(ParamSetUint8param(200), 0);
-    EXPECT_EQ(ParamIncr(10), 0);
-    EXPECT_EQ(ParamGetUint8param(), 100);
+TEST_F(ParametersTests, DecreaseInt32Param_Wrap) {
+    ASSERT_EQ(ParamGetInt32param(), 1337000);
+    struct param_t* param;
+    GetInt32Param(&param);
+    ASSERT_EQ(ParamSetInt32param(1000000), 0);
+    ASSERT_EQ(ParamDecreaseValue(param), 0);
+    ASSERT_EQ(ParamGetInt32param(), 2000000);
 }
 
-TEST_F(ParametersTests, DecrUint8Param) {
-    EXPECT_EQ(ParamGetUint8param(), 123);
-    EXPECT_EQ(ParamDecr(10), 0);
-    EXPECT_EQ(ParamGetUint8param(), 122);
+TEST_F(ParametersTests, GetValueStringInt32Param) {
+    struct param_t* param;
+    GetInt32Param(&param);
+
+    char str[PARAM_VALUE_STRING_MAX_LEN];
+
+    ASSERT_EQ(ParamGetValueString(param, str, 1337000), 0);
+    ASSERT_EQ(std::string(str), "1.337000");
+
+    ASSERT_EQ(ParamGetValueString(param, str, 1000000), 0);
+    ASSERT_EQ(std::string(str), "1.000000");
+
+    ASSERT_EQ(ParamGetValueString(param, str, 2000000), 0);
+    ASSERT_EQ(std::string(str), "2.000000");
+
+    // Out of range
+    ASSERT_EQ(ParamGetValueString(param, str, 999999), -1);
+    ASSERT_EQ(ParamGetValueString(param, str, 2000001), -1);
 }
 
-TEST_F(ParametersTests, DecrUint8Param_Wrap) {
-    EXPECT_EQ(ParamSetUint8param(100), 0);
-    EXPECT_EQ(ParamDecr(10), 0);
-    EXPECT_EQ(ParamGetUint8param(), 200);
-}
+TEST_F(ParametersTests, GetValueStringEnumParam) {
+    struct param_t* param;
+    GetEnumParam(&param);
 
-TEST_F(ParametersTests, IncrInt32Param) {
-    EXPECT_EQ(ParamGetInt32param(), 1337000);
-    EXPECT_EQ(ParamIncr(2), 0);
-    EXPECT_EQ(ParamGetInt32param(), 1337001);
-}
+    char str[PARAM_VALUE_STRING_MAX_LEN];
 
-TEST_F(ParametersTests, IncrInt32Param_Wrap) {
-    EXPECT_EQ(ParamSetInt32param(2000000), 0);
-    EXPECT_EQ(ParamIncr(2), 0);
-    EXPECT_EQ(ParamGetInt32param(), 1000000);
-}
+    ASSERT_EQ(ParamGetValueString(param, str, (int32_t)kParamValue0), 0);
+    ASSERT_EQ(std::string(str), "Value0");
 
-TEST_F(ParametersTests, DecrInt32Param) {
-    EXPECT_EQ(ParamGetInt32param(), 1337000);
-    EXPECT_EQ(ParamDecr(2), 0);
-    EXPECT_EQ(ParamGetInt32param(), 1336999);
-}
+    ASSERT_EQ(ParamGetValueString(param, str, (int32_t)kParamValue1), 0);
+    ASSERT_EQ(std::string(str), "Value1");
 
-TEST_F(ParametersTests, DecrInt32Param_Wrap) {
-    EXPECT_EQ(ParamSetInt32param(1000000), 0);
-    EXPECT_EQ(ParamDecr(2), 0);
-    EXPECT_EQ(ParamGetInt32param(), 2000000);
+    ASSERT_EQ(ParamGetValueString(param, str, (int32_t)kParamValue2), 0);
+    ASSERT_EQ(std::string(str), "Value2");
+
+    // Out of range
+    ASSERT_EQ(ParamGetValueString(param, str, -1), -1);
+    ASSERT_EQ(ParamGetValueString(param, str, (int32_t)kParamN_enum_t), -1);
 }

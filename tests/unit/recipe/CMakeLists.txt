@@ -13,6 +13,7 @@ target_include_directories(${TEST_NAME} PRIVATE
 
 target_link_libraries(${TEST_NAME}
   GTest::gmock_main
+  zephyr-mocks
 )
 
 include(GoogleTest)

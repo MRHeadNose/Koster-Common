@@ -14,15 +14,19 @@ generate_parameters(koster-common-parameters
 add_executable(${TEST_NAME}
   ${CMAKE_CURRENT_LIST_DIR}/parameters_tests.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/generated/parameters.c
+  ${PROJECT_SOURCE_DIR}/../../src/parameters_base.c
 )
 
 target_include_directories(${TEST_NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_BINARY_DIR}/generated/include
+  ${PROJECT_SOURCE_DIR}/../../include
+  ${PROJECT_SOURCE_DIR}/../../src
 )
 
 target_link_libraries(${TEST_NAME}
   GTest::gmock_main
+  zephyr-mocks
 )
 
 include(GoogleTest)
