@@ -9,19 +9,19 @@ DEFINE_FFF_GLOBALS;
 class ParametersTests : public testing::Test {
   protected:
     void SetUp() override { ParamInit(); };
-    void GetEnumParam(struct param_t** param) {
+    void GetEnumParam(const struct param_t** param) {
         struct param_category_t* category;
         ASSERT_EQ(ParamGetCategory(&category, 2), 0);  // Cat
         ASSERT_EQ(ParamCategoryGetNParams(category), 1);
         ASSERT_EQ(ParamCategoryGetParam(category, param, 0), 0);  // EnumParam
     }
-    void GetInt32Param(struct param_t** param) {
+    void GetInt32Param(const struct param_t** param) {
         struct param_category_t* category;
         ASSERT_EQ(ParamGetCategory(&category, 1), 0);  // B
         ASSERT_EQ(ParamCategoryGetNParams(category), 1);
         ASSERT_EQ(ParamCategoryGetParam(category, param, 0), 0);  // Int32Param
     }
-    void GetUInt8Param(struct param_t** param) {
+    void GetUInt8Param(const struct param_t** param) {
         struct param_category_t* category;
         ASSERT_EQ(ParamGetCategory(&category, 0), 0);  // Ape
         ASSERT_EQ(ParamCategoryGetNParams(category), 1);
@@ -79,7 +79,7 @@ TEST_F(ParametersTests, GetSetUInt8ParamFromCategory) {
     struct param_category_t* category;
     ASSERT_EQ(ParamGetCategory(&category, 0), 0);  // Ape
     ASSERT_EQ(ParamCategoryGetNParams(category), 1);
-    struct param_t* param;
+    const struct param_t* param;
     ASSERT_EQ(ParamCategoryGetParam(category, &param, 0), 0);  // UInt8param
 
     // New, valid value
@@ -96,7 +96,7 @@ TEST_F(ParametersTests, GetSetInt32ParamFromCategory) {
     struct param_category_t* category;
     ASSERT_EQ(ParamGetCategory(&category, 1), 0);  // B
     ASSERT_EQ(ParamCategoryGetNParams(category), 1);
-    struct param_t* param;
+    const struct param_t* param;
     ASSERT_EQ(ParamCategoryGetParam(category, &param, 0), 0);  // Int32Param
 
     // New, valid value
@@ -113,7 +113,7 @@ TEST_F(ParametersTests, GetSetEnumParamFromCategory) {
     struct param_category_t* category;
     ASSERT_EQ(ParamGetCategory(&category, 2), 0);  // Cat
     ASSERT_EQ(ParamCategoryGetNParams(category), 1);
-    struct param_t* param;
+    const struct param_t* param;
     ASSERT_EQ(ParamCategoryGetParam(category, &param, 0), 0);  // EnumParam
 
     // New, valid value
@@ -128,7 +128,7 @@ TEST_F(ParametersTests, GetSetEnumParamFromCategory) {
 
 TEST_F(ParametersTests, IncreaseEnumParam) {
     ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
-    struct param_t* param;
+    const struct param_t* param;
     GetEnumParam(&param);
     ASSERT_EQ(ParamIncreaseValue(param), 0);
     ASSERT_EQ(ParamGetEnumparam(), kParamValue2);
@@ -136,7 +136,7 @@ TEST_F(ParametersTests, IncreaseEnumParam) {
 
 TEST_F(ParametersTests, IncreaseEnumParam_Wrap) {
     ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
-    struct param_t* param;
+    const struct param_t* param;
     GetEnumParam(&param);
     ASSERT_EQ(ParamSetEnumparam(kParamValue2), 0);
     ASSERT_EQ(ParamIncreaseValue(param), 0);
@@ -145,7 +145,7 @@ TEST_F(ParametersTests, IncreaseEnumParam_Wrap) {
 
 TEST_F(ParametersTests, DecreaseEnumParam) {
     ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
-    struct param_t* param;
+    const struct param_t* param;
     GetEnumParam(&param);
     ASSERT_EQ(ParamDecreaseValue(param), 0);
     ASSERT_EQ(ParamGetEnumparam(), kParamValue0);
@@ -153,7 +153,7 @@ TEST_F(ParametersTests, DecreaseEnumParam) {
 
 TEST_F(ParametersTests, DecreaseEnumParam_Wrap) {
     ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
-    struct param_t* param;
+    const struct param_t* param;
     GetEnumParam(&param);
     ASSERT_EQ(ParamSetEnumparam(kParamValue0), 0);
     ASSERT_EQ(ParamDecreaseValue(param), 0);
@@ -162,7 +162,7 @@ TEST_F(ParametersTests, DecreaseEnumParam_Wrap) {
 
 TEST_F(ParametersTests, IncreaseUInt8Param) {
     ASSERT_EQ(ParamGetUint8param(), 123);
-    struct param_t* param;
+    const struct param_t* param;
     GetUInt8Param(&param);
     ASSERT_EQ(ParamIncreaseValue(param), 0);
     ASSERT_EQ(ParamGetUint8param(), 124);
@@ -170,7 +170,7 @@ TEST_F(ParametersTests, IncreaseUInt8Param) {
 
 TEST_F(ParametersTests, IncreaseUInt8Param_Wrap) {
     ASSERT_EQ(ParamGetUint8param(), 123);
-    struct param_t* param;
+    const struct param_t* param;
     GetUInt8Param(&param);
     ASSERT_EQ(ParamSetUint8param(200), 0);
     ASSERT_EQ(ParamIncreaseValue(param), 0);
@@ -179,7 +179,7 @@ TEST_F(ParametersTests, IncreaseUInt8Param_Wrap) {
 
 TEST_F(ParametersTests, DecreaseUInt8Param) {
     ASSERT_EQ(ParamGetUint8param(), 123);
-    struct param_t* param;
+    const struct param_t* param;
     GetUInt8Param(&param);
     ASSERT_EQ(ParamDecreaseValue(param), 0);
     ASSERT_EQ(ParamGetUint8param(), 122);
@@ -187,7 +187,7 @@ TEST_F(ParametersTests, DecreaseUInt8Param) {
 
 TEST_F(ParametersTests, DecreaseUInt8Param_Wrap) {
     ASSERT_EQ(ParamGetUint8param(), 123);
-    struct param_t* param;
+    const struct param_t* param;
     GetUInt8Param(&param);
     ASSERT_EQ(ParamSetUint8param(100), 0);
     ASSERT_EQ(ParamDecreaseValue(param), 0);
@@ -196,7 +196,7 @@ TEST_F(ParametersTests, DecreaseUInt8Param_Wrap) {
 
 TEST_F(ParametersTests, IncreaseInt32Param) {
     ASSERT_EQ(ParamGetInt32param(), 1337000);
-    struct param_t* param;
+    const struct param_t* param;
     GetInt32Param(&param);
     ASSERT_EQ(ParamIncreaseValue(param), 0);
     ASSERT_EQ(ParamGetInt32param(), 1337001);
@@ -204,7 +204,7 @@ TEST_F(ParametersTests, IncreaseInt32Param) {
 
 TEST_F(ParametersTests, IncreaseInt32Param_Wrap) {
     ASSERT_EQ(ParamGetInt32param(), 1337000);
-    struct param_t* param;
+    const struct param_t* param;
     GetInt32Param(&param);
     ASSERT_EQ(ParamSetInt32param(2000000), 0);
     ASSERT_EQ(ParamIncreaseValue(param), 0);
@@ -213,7 +213,7 @@ TEST_F(ParametersTests, IncreaseInt32Param_Wrap) {
 
 TEST_F(ParametersTests, DecreaseInt32Param) {
     ASSERT_EQ(ParamGetInt32param(), 1337000);
-    struct param_t* param;
+    const struct param_t* param;
     GetInt32Param(&param);
     ASSERT_EQ(ParamDecreaseValue(param), 0);
     ASSERT_EQ(ParamGetInt32param(), 1336999);
@@ -221,7 +221,7 @@ TEST_F(ParametersTests, DecreaseInt32Param) {
 
 TEST_F(ParametersTests, DecreaseInt32Param_Wrap) {
     ASSERT_EQ(ParamGetInt32param(), 1337000);
-    struct param_t* param;
+    const struct param_t* param;
     GetInt32Param(&param);
     ASSERT_EQ(ParamSetInt32param(1000000), 0);
     ASSERT_EQ(ParamDecreaseValue(param), 0);
@@ -229,7 +229,7 @@ TEST_F(ParametersTests, DecreaseInt32Param_Wrap) {
 }
 
 TEST_F(ParametersTests, GetValueStringInt32Param) {
-    struct param_t* param;
+    const struct param_t* param;
     GetInt32Param(&param);
 
     char str[PARAM_VALUE_STRING_MAX_LEN];
@@ -249,7 +249,7 @@ TEST_F(ParametersTests, GetValueStringInt32Param) {
 }
 
 TEST_F(ParametersTests, GetValueStringEnumParam) {
-    struct param_t* param;
+    const struct param_t* param;
     GetEnumParam(&param);
 
     char str[PARAM_VALUE_STRING_MAX_LEN];

@@ -73,9 +73,22 @@ source = """
 LOG_MODULE_DECLARE(koster_common);
 
 extern struct k_mutex param_mutex;
-static struct param_t params_[PARAM_NUM_PARAMS];
-static struct param_category_t categories_[PARAM_NUM_CATEGORIES];
 static struct settings_handler handler_;
+
+{param_names}
+{param_descriptions}
+{category_names}
+
+static int32_t param_values_[PARAM_NUM_PARAMS];
+
+static const struct param_t params_[PARAM_NUM_PARAMS] = {{
+{parameter_initializers}
+}};
+
+static const struct param_category_t categories_[PARAM_NUM_CATEGORIES] = {{
+{category_initializers}
+}};
+
 
 {get_value_string_funcs}
 
@@ -99,21 +112,16 @@ static int handle_export(int (*storage_func)(const char* name, const void* value
     return ret;
 }}
 
-static int load_defaults() {{
-    int rc = -1;
-    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
-{parameter_initializers}
-{category_initializers}
-        k_mutex_unlock(&param_mutex);
-        rc = 0;
-    }}
-    return rc;
-}}
-
 int ParamInit() {{
     k_mutex_init(&param_mutex);
 
-    int rc = load_defaults();
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
+        memset(&param_values_, 0, sizeof(param_values_));
+        k_mutex_unlock(&param_mutex);
+    }} else {{
+        LOG_ERR("[parameters] Unable to lock parameters mutex.");
+        return -1;
+    }}
 
     handler_.name = "parameters";
     handler_.h_get = NULL;
@@ -121,15 +129,15 @@ int ParamInit() {{
     handler_.h_commit = NULL;
     handler_.h_export = handle_export;
 
-    rc = settings_register(&handler_);
+    int rc = settings_register(&handler_);
     if (rc != 0) {{
-        LOG_ERR("[recipe] settings_register failed (err %d)", rc);
+        LOG_ERR("[parameters] settings_register failed (err %d)", rc);
         return -1;
     }}
 
     rc = settings_load();
     if (rc != 0) {{
-        LOG_ERR("[recipe] settings_load failed (err %d)", rc);
+        LOG_ERR("[parameters] settings_load failed (err %d)", rc);
         return -1;
     }}
 
@@ -152,7 +160,7 @@ int ParamGetCategory(struct param_category_t** category, const unsigned int inde
     return rc;
 }}
 
-int ParamGetValueString(struct param_t* param, char* buf, const int32_t value) {{
+int ParamGetValueString(const struct param_t* param, char* buf, const int32_t value) {{
     int rc = -1;
     if (param == NULL) {{
         return rc;
@@ -179,7 +187,7 @@ int ParamGetValueString(struct param_t* param, char* buf, const int32_t value) {
     return rc;
 }}
 
-int ParamSave(struct param_t* param) {{
+int ParamSave(const struct param_t* param) {{
     int rc = -1;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
         if ( param == NULL ) {{
@@ -213,7 +221,7 @@ get_value_string_case = """
 
 getter_definition = """{type} ParamGet{name}(){{
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
-        int32_t ret = params_[{index}].value;
+        int32_t ret = param_values_[{index}];
         k_mutex_unlock(&param_mutex);
         return ({type})ret;
     }}
@@ -227,32 +235,20 @@ setter_definition = """int ParamSet{name}(const {type} value) {{
     }}
 
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
-        params_[{index}].value = (int32_t)value;
+        param_values_[{index}] = (int32_t)value;
         k_mutex_unlock(&param_mutex);
         rc = 0;
     }}
     return rc;
 }}"""
 
-parameter_initializer = """
-        params_[{index}].id = {id};
-        strncpy(params_[{index}].name, "{name}", PARAM_NAME_MAX_LEN);
-        params_[{index}].type = {type};
-        params_[{index}].access = {access};
-        strncpy(params_[{index}].description, "{description}", PARAM_DESC_MAX_LEN);
-        params_[{index}].value = {value};
-        params_[{index}].min = {min};
-        params_[{index}].max = {max};
-        params_[{index}].exponent = {exponent};
-"""
+parameter_initializer = "    {{{id}, kParamName_{name}, {type}, {access}, kParamDescription_{name}, &param_values_[{index}], {min}, {max}, {exponent}}},"
+param_name = 'static const char kParamName_{name}[] = "{display_name}";';
+param_description = 'static const char kParamDescription_{name}[] = "{description}";';
+category_name = 'static const char kCategoryName_{name}[] = "{display_name}";';
 
-category_initializer = """
-        categories_[{index}].id = {id};
-        strncpy(categories_[{index}].name, "{name}", PARAM_NAME_MAX_LEN);
-        categories_[{index}].n_params = {n_params_in_category};
-{category_parameter_ptrs}
-"""
-category_parameter_ptr = "        categories_[{category_index}].params[{parameter_index}] = &params_[{parameter_ptr}];"
+category_initializer = "    {{{id}, kCategoryName_{name}, {n_params_in_category}, {category_parameter_ptrs}}},"
+category_parameter_ptr = "{{&params_[{parameter_ptr}]}}"
 
 handle_set_case = """
     if (!strncmp(name, "{name}", name_len)) {{
@@ -263,7 +259,7 @@ handle_set_case = """
 
         int rc = -EBUSY;
         if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
-            rc = read_cb(cb_arg, &params_[{index}].value, sizeof(int32_t));
+            rc = read_cb(cb_arg, &param_values_[{index}], sizeof(int32_t));
             k_mutex_unlock(&param_mutex);
             if (rc >= 0) {{
                 return 0;
@@ -273,7 +269,7 @@ handle_set_case = """
         return rc;
     }}"""
 handle_export_case = """
-        ret = storage_func("parameters/{name}", &params_[{index}].value, sizeof(int32_t));
+        ret = storage_func("parameters/{name}", &param_values_[{index}], sizeof(int32_t));
         if ( ret != 0 ) {{
             k_mutex_unlock(&param_mutex);
             return ret;
@@ -281,7 +277,7 @@ handle_export_case = """
     """
 settings_save_case = """
         case {id}:
-            rc = settings_save_one("parameters/{name}", &params_[{index}].value, sizeof(int32_t));
+            rc = settings_save_one("parameters/{name}", &param_values_[{index}], sizeof(int32_t));
             if ( rc != 0 ) {{
                 LOG_ERR("[parameters] Unable to save parameter {name}");
             }}
@@ -467,6 +463,8 @@ class SourceGenerator:
         handle_set_cases = []
         handle_export_cases = []
         settings_save_cases = []
+        param_names = []
+        param_descriptions = []
         for i,param in enumerate(self.config.parameters):
             id_to_index[param] = i
             type = self.config.parameters[param]["Type"]
@@ -500,7 +498,6 @@ class SourceGenerator:
                 value=default,
                 type="kParamTypeEnum" if type in self.config.enums else "kParamTypeNumeric",
                 access=self.config.access_levels[self.config.parameters[param]["AccessLevel"]],
-                description=self.config.parameters[param]["Description"],
                 min=minimum,
                 max=maximum,
                 exponent=self.config.parameters[param]["Exponent"] if "Exponent" in self.config.parameters[param] else 0
@@ -511,10 +508,13 @@ class SourceGenerator:
             handle_set_cases.append(handle_set_case.format(name=name, index=i))
             handle_export_cases.append(handle_export_case.format(name=name, index=i))
             settings_save_cases.append(settings_save_case.format(name=name, index=i, id=param))
+            param_names.append(param_name.format(name=name, display_name=self.config.parameters[param]["Name"]))
+            param_descriptions.append(param_description.format(name=name, description=self.config.parameters[param]["Description"]))
             
         categories = []
         n_params_in_category = []
         category_initializers = []
+        category_names = []
         for i,name in enumerate(sorted(self.config.categories)):
             filtered_parameters = [ self.config.parameters[key] for key in self.config.parameters
                                     if self.config.parameters[key]["Category"] == name ]
@@ -526,9 +526,10 @@ class SourceGenerator:
                 index=i,
                 name=name,
                 n_params_in_category=n_params,
-                category_parameter_ptrs="\n".join([category_parameter_ptr.format(category_index=i, parameter_index=p_i, parameter_ptr=p) for p_i,p in enumerate(sorted_filtered_parameters_indices)])
+                category_parameter_ptrs=", ".join([category_parameter_ptr.format(parameter_ptr=p) for p in sorted_filtered_parameters_indices])
             ))
             n_params_in_category.append(n_params)
+            category_names.append(category_name.format(name=to_camelcase(name), display_name=name))
         
         header_content = header.format(
             enums='\n'.join(enums),
@@ -555,7 +556,10 @@ class SourceGenerator:
             get_value_string_cases="\n".join(get_value_string_cases),
             handle_export_cases="\n".join(handle_export_cases),
             handle_set_cases="\n".join(handle_set_cases),
-            settings_save_cases="\n".join(settings_save_cases)
+            settings_save_cases="\n".join(settings_save_cases),
+            param_names="\n".join(param_names),
+            param_descriptions="\n".join(param_descriptions),
+            category_names="\n".join(category_names)
         )
         with open(source_path, 'w') as file_:
             file_.write(source_content)

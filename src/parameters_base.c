@@ -26,7 +26,7 @@ int32_t ParamGetValue(const struct param_t* param) {
     int32_t ret_val = 0;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
         if (param != NULL) {
-            ret_val = param->value;
+            ret_val = *param->value;
         }
         k_mutex_unlock(&param_mutex);
     }
@@ -66,14 +66,14 @@ int ParamGetExponent(const struct param_t* param) {
     return ret_val;
 }
 
-int ParamIncreaseValue(struct param_t* param) {
+int ParamIncreaseValue(const struct param_t* param) {
     int rc = -1;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
         if (param != NULL) {
-            if (param->value == param->max) {
-                param->value = param->min;
+            if (*param->value == param->max) {
+                *param->value = param->min;
             } else {
-                ++param->value;
+                ++(*param->value);
             }
             rc = 0;
         }
@@ -82,14 +82,14 @@ int ParamIncreaseValue(struct param_t* param) {
     return rc;
 }
 
-int ParamDecreaseValue(struct param_t* param) {
+int ParamDecreaseValue(const struct param_t* param) {
     int rc = -1;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
         if (param != NULL) {
-            if (param->value == param->min) {
-                param->value = param->max;
+            if (*param->value == param->min) {
+                *param->value = param->max;
             } else {
-                --param->value;
+                --(*param->value);
             }
             rc = 0;
         }
@@ -98,11 +98,11 @@ int ParamDecreaseValue(struct param_t* param) {
     return rc;
 }
 
-int ParamSetValue(struct param_t* param, const uint32_t value) {
+int ParamSetValue(const struct param_t* param, const uint32_t value) {
     int rc = -1;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
         if (param != NULL && value >= param->min && value <= param->max) {
-            param->value = value;
+            *param->value = value;
             rc = 0;
         }
         k_mutex_unlock(&param_mutex);
@@ -110,7 +110,7 @@ int ParamSetValue(struct param_t* param, const uint32_t value) {
     return rc;
 }
 
-bool ParamIsEnum(struct param_t* param) {
+bool ParamIsEnum(const struct param_t* param) {
     bool is_enum = false;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
         if (param != NULL) {
@@ -132,7 +132,9 @@ unsigned int ParamCategoryGetNParams(const struct param_category_t* category) {
     return ret_val;
 }
 
-int ParamCategoryGetParam(const struct param_category_t* category, struct param_t** param, unsigned int index) {
+int ParamCategoryGetParam(const struct param_category_t* category,
+                          const struct param_t** param,
+                          const unsigned int index) {
     int rc = -1;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
         if (category != NULL) {
@@ -158,9 +160,9 @@ int ParamGetCategoryName(const struct param_category_t* category, char* buf) {
     return rc;
 }
 
-int ParamGetCurrentValueString(struct param_t* param, char* buf) {
+int ParamGetCurrentValueString(const struct param_t* param, char* buf) {
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
-        return ParamGetValueString(param, buf, param->value);
+        return ParamGetValueString(param, buf, *param->value);
         k_mutex_unlock(&param_mutex);
     }
     return -1;

@@ -48,7 +48,7 @@ int32_t ParamGetMaxValue(const struct param_t* param);
  * @return 0 on success, -1 on failure
  * @param param  pointer to the parameter
  */
-int ParamIncreaseValue(struct param_t* param);
+int ParamIncreaseValue(const struct param_t* param);
 
 /**
  * Decrease value of parameter
@@ -58,7 +58,7 @@ int ParamIncreaseValue(struct param_t* param);
  * @return 0 on success, -1 on failure
  * @param param  pointer to the parameter
  */
-int ParamDecreaseValue(struct param_t* param);
+int ParamDecreaseValue(const struct param_t* param);
 
 /**
  * Set parameter value
@@ -67,7 +67,7 @@ int ParamDecreaseValue(struct param_t* param);
  * @param param  pointer to the parameter
  * @param value  the value to set
  */
-int ParamSetValue(struct param_t* param, const uint32_t value);
+int ParamSetValue(const struct param_t* param, const uint32_t value);
 
 /**
  * Check if parameter is an enum
@@ -75,7 +75,7 @@ int ParamSetValue(struct param_t* param, const uint32_t value);
  * @return true if parameter is an enum, false otherwise
  * @param param  pointer to the parameter
  */
-bool ParamIsEnum(struct param_t* param);
+bool ParamIsEnum(const struct param_t* param);
 
 /**
  * Get name of parameter
@@ -120,7 +120,9 @@ unsigned int ParamCategoryGetNParams(const struct param_category_t* category);
  * @param param     pointer to the parameter pointer that will be filled.
  * @param index     the alphabetical index
  */
-int ParamCategoryGetParam(const struct param_category_t* category, struct param_t** param, const unsigned int index);
+int ParamCategoryGetParam(const struct param_category_t* category,
+                          const struct param_t** param,
+                          const unsigned int index);
 
 /**
  * Get string representation of the current parameter value
@@ -129,7 +131,7 @@ int ParamCategoryGetParam(const struct param_category_t* category, struct param_
  * @param param  pointer to the parameter
  * @param buf    will be filled with the string representation of the current parameter value
  */
-int ParamGetCurrentValueString(struct param_t* param, char* buf);
+int ParamGetCurrentValueString(const struct param_t* param, char* buf);
 
 /**
  * Get string representation of the a parameter value
@@ -139,7 +141,7 @@ int ParamGetCurrentValueString(struct param_t* param, char* buf);
  * @param buf    will be filled with the string representation of the current parameter value
  * @param value  the value to get the string represention of
  */
-int ParamGetValueString(struct param_t* param, char* buf, const int32_t value);
+int ParamGetValueString(const struct param_t* param, char* buf, const int32_t value);
 
 /**
  * Get parameter exponent
@@ -157,6 +159,6 @@ int ParamGetExponent(const struct param_t* param);
  * @return 0 on success, -1 on failure
  * @param param  pointer to the parameter
  */
-int ParamSave(struct param_t* param);
+int ParamSave(const struct param_t* param);
 
 #endif
