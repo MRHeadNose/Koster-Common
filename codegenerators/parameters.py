@@ -112,16 +112,30 @@ static int handle_export(int (*storage_func)(const char* name, const void* value
     return ret;
 }}
 
+static void load_production_defaults() {{
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
+    {param_production_default_values}
+        k_mutex_unlock(&param_mutex);
+    }}
+}}
+
+void ParamLoadDefaults(const int32_t machine_type) {{
+    load_production_defaults();
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
+        param_values_[0] = machine_type;
+        switch ( machine_type ) {{
+{param_default_overrides}
+            default:
+                LOG_ERR("[parameter] Unknown machine type (%o). Loaded production defaults.", machine_type);
+        k_mutex_unlock(&param_mutex);
+        }}
+    }}
+}}
+
 int ParamInit() {{
     k_mutex_init(&param_mutex);
 
-    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
-        memset(&param_values_, 0, sizeof(param_values_));
-        k_mutex_unlock(&param_mutex);
-    }} else {{
-        LOG_ERR("[parameters] Unable to lock parameters mutex.");
-        return -1;
-    }}
+    load_production_defaults();
 
     handler_.name = "parameters";
     handler_.h_get = NULL;
@@ -148,7 +162,7 @@ int ParamInit() {{
 
 {setter_definitions}
 
-int ParamGetCategory(struct param_category_t** category, const unsigned int index) {{
+int ParamGetCategory(const struct param_category_t** category, const unsigned int index) {{
     int rc = -1;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
         if (index < PARAM_NUM_CATEGORIES) {{
@@ -247,8 +261,8 @@ param_name = 'static const char kParamName_{name}[] = "{display_name}";';
 param_description = 'static const char kParamDescription_{name}[] = "{description}";';
 category_name = 'static const char kCategoryName_{name}[] = "{display_name}";';
 
-category_initializer = "    {{{id}, kCategoryName_{name}, {n_params_in_category}, {category_parameter_ptrs}}},"
-category_parameter_ptr = "{{&params_[{parameter_ptr}]}}"
+category_initializer = "    {{{id}, kCategoryName_{name}, {n_params_in_category}, {{{category_parameter_ptrs}}}}},"
+category_parameter_ptr = "&params_[{parameter_ptr}]"
 
 handle_set_case = """
     if (!strncmp(name, "{name}", name_len)) {{
@@ -283,6 +297,12 @@ settings_save_case = """
             }}
             break;
 """
+param_default_override = """
+        case {machine_type_id}:
+{param_value_setters}
+            break;
+"""
+param_value_setter = "            param_values_[{index}] = {value};"
 
 class Configuration:
     """
@@ -294,7 +314,7 @@ class Configuration:
         self.units = {} # {str : str}, {"Name" : "Id"}
         self.enums = {} # {str : {str : str}}, {"Name" : {"Name" : "Value"}}
         self.parameters = {} # {str : {str : str}}, {"Id" : {<attribute> : <value>}}
-
+        self.overrides = {} # {str : {str : str}}, {"MachineType" : {"Parameter Id" : <value>}}
         
     def _elements_to_unique_key_value_dict(self, element_tree, element_name : str, key_attrib : str, value_attrib : str):
         key_value_dict = {}
@@ -330,7 +350,14 @@ class Configuration:
                 raise RuntimeError(error_txt)
             
             self.enums[name] = self._elements_to_unique_key_value_dict(element, "EnumValue", "Name", "Value")
-
+            
+        for element in root.iter("DefaultOverride"):
+            machine = element.get("MachineType")
+            if machine in self.overrides.keys():
+                error_txt = f'Duplicate override for MachineType {machine}'
+                raise RuntimeError(error_txt)
+            
+            self.overrides[machine] = self._elements_to_unique_key_value_dict(element, "DefaultValue", "ParameterId", "Value")
 
         for element in root.iter("Parameter"):
             id = element.get("Id")
@@ -347,6 +374,10 @@ class Configuration:
 
         # parameter validation
         for id in self.parameters:
+
+            if id == "0" and self.parameters[id]["Name"] != "Machine type":
+                error_txt = f'Parameter with Id 0 must be "Machine type"'
+                raise RuntimeError(error_txt)
             
             if "Default" not in self.parameters[id]:
                 error_txt = f'Missing default value for Parameter with Id "{id}"'
@@ -413,10 +444,23 @@ class Configuration:
                 error_txt = f'Unknown Type "{type}" for Parameter with Id "{id}"'
                 raise RuntimeError(error_txt)
 
+        if not "machine_type_t" in self.enums:
+            error_txt = f'An enum named "machine_type_t" is required DefaultOverride'
+            raise RuntimeError(error_txt)
+
+        for machine_type in self.overrides:
+            if machine_type not in self.enums["machine_type_t"]:
+                error_txt = f'Unknown MachineType "{machine_type}" in DefaultOverride'
+                raise RuntimeError(error_txt)
+            for param_id in self.overrides[machine_type]:
+                if param_id not in self.parameters:
+                    error_txt = f'Unknown ParameterId "{param_id}" in DefaultOverride for MachineType "{machine_type}"'
+                    raise RuntimeError(error_txt)
+
 
 
 def to_camelcase(string : str) -> str:
-    return "".join([s.capitalize() for s in string.split()])
+    return "".join([s.capitalize() for s in string.split()]).replace(".", "")
     
 class SourceGenerator:
     """
@@ -465,6 +509,7 @@ class SourceGenerator:
         settings_save_cases = []
         param_names = []
         param_descriptions = []
+        param_default_values = []
         for i,param in enumerate(self.config.parameters):
             id_to_index[param] = i
             type = self.config.parameters[param]["Type"]
@@ -495,7 +540,6 @@ class SourceGenerator:
                 index=i,
                 id=param,
                 name=name,
-                value=default,
                 type="kParamTypeEnum" if type in self.config.enums else "kParamTypeNumeric",
                 access=self.config.access_levels[self.config.parameters[param]["AccessLevel"]],
                 min=minimum,
@@ -510,6 +554,7 @@ class SourceGenerator:
             settings_save_cases.append(settings_save_case.format(name=name, index=i, id=param))
             param_names.append(param_name.format(name=name, display_name=self.config.parameters[param]["Name"]))
             param_descriptions.append(param_description.format(name=name, description=self.config.parameters[param]["Description"]))
+            param_default_values.append(param_value_setter.format(index=i, value=default))
             
         categories = []
         n_params_in_category = []
@@ -524,12 +569,25 @@ class SourceGenerator:
             category_initializers.append(category_initializer.format(
                 id=self.config.categories[name],
                 index=i,
-                name=name,
+                name=to_camelcase(name),
                 n_params_in_category=n_params,
                 category_parameter_ptrs=", ".join([category_parameter_ptr.format(parameter_ptr=p) for p in sorted_filtered_parameters_indices])
             ))
             n_params_in_category.append(n_params)
             category_names.append(category_name.format(name=to_camelcase(name), display_name=name))
+
+        param_default_overrides = []
+        for machine_type in self.config.overrides:
+            param_value_setters = []
+            for param_id in self.config.overrides[machine_type]:
+                default = self.config.overrides[machine_type][param_id]
+                if self.config.parameters[param_id]["Type"] in self.config.enums:
+                    default = f"kParam{default}"
+                param_value_setters.append(param_value_setter.format(index=id_to_index[param_id], value=default))
+            param_default_overrides.append(param_default_override.format(
+                machine_type_id=self.config.enums["machine_type_t"][machine_type],
+                param_value_setters="\n".join(param_value_setters))
+            )
         
         header_content = header.format(
             enums='\n'.join(enums),
@@ -559,7 +617,9 @@ class SourceGenerator:
             settings_save_cases="\n".join(settings_save_cases),
             param_names="\n".join(param_names),
             param_descriptions="\n".join(param_descriptions),
-            category_names="\n".join(category_names)
+            category_names="\n".join(category_names),
+            param_production_default_values="\n    ".join(param_default_values),
+            param_default_overrides="\n".join(param_default_overrides)
         )
         with open(source_path, 'w') as file_:
             file_.write(source_content)

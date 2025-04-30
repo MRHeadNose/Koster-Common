@@ -17,12 +17,27 @@ struct param_category_t;
 int ParamInit();
 
 /**
+ * Load factory default parameters
+ *
+ * @param machine_type the machine type to load the default settings for
+ */
+void ParamLoadDefaults(const int32_t machine_type);
+
+/**
  * Get parameter value
  *
  * @return the value of the parameter
  * @param param  pointer to the parameter
  */
 int32_t ParamGetValue(const struct param_t* param);
+
+/**
+ * Get parameter Id
+ *
+ * @return the Id of the parameter
+ * @param param  pointer to the parameter
+ */
+int ParamGetId(const struct param_t* param);
 
 /**
  * Get minimum parameter value
@@ -93,7 +108,7 @@ int ParamGetName(const struct param_t* param, char* buf);
  * @param param  pointer to the category pointer that will be filled when loading.
  * @param index  the alphabetical index
  */
-int ParamGetCategory(struct param_category_t** category, const unsigned int index);
+int ParamGetCategory(const struct param_category_t** category, const unsigned int index);
 
 /**
  * Get name of category

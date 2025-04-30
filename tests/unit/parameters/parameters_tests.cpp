@@ -10,29 +10,38 @@ class ParametersTests : public testing::Test {
   protected:
     void SetUp() override { ParamInit(); };
     void GetEnumParam(const struct param_t** param) {
-        struct param_category_t* category;
-        ASSERT_EQ(ParamGetCategory(&category, 2), 0);  // Cat
-        ASSERT_EQ(ParamCategoryGetNParams(category), 1);
+        const struct param_category_t* category;
+        ASSERT_EQ(ParamGetCategory(&category, 2), 0);  // Cat Stevens
+        ASSERT_EQ(ParamCategoryGetNParams(category), 2);
         ASSERT_EQ(ParamCategoryGetParam(category, param, 0), 0);  // EnumParam
     }
     void GetInt32Param(const struct param_t** param) {
-        struct param_category_t* category;
+        const struct param_category_t* category;
         ASSERT_EQ(ParamGetCategory(&category, 1), 0);  // B
-        ASSERT_EQ(ParamCategoryGetNParams(category), 1);
+        ASSERT_EQ(ParamCategoryGetNParams(category), 2);
         ASSERT_EQ(ParamCategoryGetParam(category, param, 0), 0);  // Int32Param
     }
     void GetUInt8Param(const struct param_t** param) {
-        struct param_category_t* category;
+        const struct param_category_t* category;
         ASSERT_EQ(ParamGetCategory(&category, 0), 0);  // Ape
         ASSERT_EQ(ParamCategoryGetNParams(category), 1);
         ASSERT_EQ(ParamCategoryGetParam(category, param, 0), 0);  // UInt8Param
     }
 };
 
-TEST_F(ParametersTests, Get_ReturnsDefault) {
+TEST_F(ParametersTests, LoadProductionDefaultsOnInit) {
     ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
     ASSERT_EQ(ParamGetUint8param(), 123);
     ASSERT_EQ(ParamGetInt32param(), 1337000);
+}
+
+TEST_F(ParametersTests, LoadMachineTypeDefaults) {
+    ParamLoadDefaults(kParamType2);
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue2);
+    ASSERT_EQ(ParamGetInt32param(), 1000000);
+    ParamLoadDefaults(kParamType3);
+    ASSERT_EQ(ParamGetEnumparam(), kParamValue0);
+    ASSERT_EQ(ParamGetInt32param(), 2000000);
 }
 
 TEST_F(ParametersTests, GetSetUInt8ParamByName) {
@@ -76,7 +85,7 @@ TEST_F(ParametersTests, GetSetEnumParamByName) {
 }
 
 TEST_F(ParametersTests, GetSetUInt8ParamFromCategory) {
-    struct param_category_t* category;
+    const struct param_category_t* category;
     ASSERT_EQ(ParamGetCategory(&category, 0), 0);  // Ape
     ASSERT_EQ(ParamCategoryGetNParams(category), 1);
     const struct param_t* param;
@@ -93,9 +102,9 @@ TEST_F(ParametersTests, GetSetUInt8ParamFromCategory) {
 }
 
 TEST_F(ParametersTests, GetSetInt32ParamFromCategory) {
-    struct param_category_t* category;
+    const struct param_category_t* category;
     ASSERT_EQ(ParamGetCategory(&category, 1), 0);  // B
-    ASSERT_EQ(ParamCategoryGetNParams(category), 1);
+    ASSERT_EQ(ParamCategoryGetNParams(category), 2);
     const struct param_t* param;
     ASSERT_EQ(ParamCategoryGetParam(category, &param, 0), 0);  // Int32Param
 
@@ -110,9 +119,9 @@ TEST_F(ParametersTests, GetSetInt32ParamFromCategory) {
 }
 
 TEST_F(ParametersTests, GetSetEnumParamFromCategory) {
-    struct param_category_t* category;
-    ASSERT_EQ(ParamGetCategory(&category, 2), 0);  // Cat
-    ASSERT_EQ(ParamCategoryGetNParams(category), 1);
+    const struct param_category_t* category;
+    ASSERT_EQ(ParamGetCategory(&category, 2), 0);  // Cat Stevens
+    ASSERT_EQ(ParamCategoryGetNParams(category), 2);
     const struct param_t* param;
     ASSERT_EQ(ParamCategoryGetParam(category, &param, 0), 0);  // EnumParam
 
@@ -127,6 +136,7 @@ TEST_F(ParametersTests, GetSetEnumParamFromCategory) {
 }
 
 TEST_F(ParametersTests, IncreaseEnumParam) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
     const struct param_t* param;
     GetEnumParam(&param);
@@ -135,6 +145,7 @@ TEST_F(ParametersTests, IncreaseEnumParam) {
 }
 
 TEST_F(ParametersTests, IncreaseEnumParam_Wrap) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
     const struct param_t* param;
     GetEnumParam(&param);
@@ -144,6 +155,7 @@ TEST_F(ParametersTests, IncreaseEnumParam_Wrap) {
 }
 
 TEST_F(ParametersTests, DecreaseEnumParam) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
     const struct param_t* param;
     GetEnumParam(&param);
@@ -152,6 +164,7 @@ TEST_F(ParametersTests, DecreaseEnumParam) {
 }
 
 TEST_F(ParametersTests, DecreaseEnumParam_Wrap) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetEnumparam(), kParamValue1);
     const struct param_t* param;
     GetEnumParam(&param);
@@ -161,6 +174,7 @@ TEST_F(ParametersTests, DecreaseEnumParam_Wrap) {
 }
 
 TEST_F(ParametersTests, IncreaseUInt8Param) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetUint8param(), 123);
     const struct param_t* param;
     GetUInt8Param(&param);
@@ -169,6 +183,7 @@ TEST_F(ParametersTests, IncreaseUInt8Param) {
 }
 
 TEST_F(ParametersTests, IncreaseUInt8Param_Wrap) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetUint8param(), 123);
     const struct param_t* param;
     GetUInt8Param(&param);
@@ -178,6 +193,7 @@ TEST_F(ParametersTests, IncreaseUInt8Param_Wrap) {
 }
 
 TEST_F(ParametersTests, DecreaseUInt8Param) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetUint8param(), 123);
     const struct param_t* param;
     GetUInt8Param(&param);
@@ -186,6 +202,7 @@ TEST_F(ParametersTests, DecreaseUInt8Param) {
 }
 
 TEST_F(ParametersTests, DecreaseUInt8Param_Wrap) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetUint8param(), 123);
     const struct param_t* param;
     GetUInt8Param(&param);
@@ -195,6 +212,7 @@ TEST_F(ParametersTests, DecreaseUInt8Param_Wrap) {
 }
 
 TEST_F(ParametersTests, IncreaseInt32Param) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetInt32param(), 1337000);
     const struct param_t* param;
     GetInt32Param(&param);
@@ -203,6 +221,7 @@ TEST_F(ParametersTests, IncreaseInt32Param) {
 }
 
 TEST_F(ParametersTests, IncreaseInt32Param_Wrap) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetInt32param(), 1337000);
     const struct param_t* param;
     GetInt32Param(&param);
@@ -212,6 +231,7 @@ TEST_F(ParametersTests, IncreaseInt32Param_Wrap) {
 }
 
 TEST_F(ParametersTests, DecreaseInt32Param) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetInt32param(), 1337000);
     const struct param_t* param;
     GetInt32Param(&param);
@@ -220,6 +240,7 @@ TEST_F(ParametersTests, DecreaseInt32Param) {
 }
 
 TEST_F(ParametersTests, DecreaseInt32Param_Wrap) {
+    ParamLoadDefaults(0);
     ASSERT_EQ(ParamGetInt32param(), 1337000);
     const struct param_t* param;
     GetInt32Param(&param);
@@ -266,4 +287,21 @@ TEST_F(ParametersTests, GetValueStringEnumParam) {
     // Out of range
     ASSERT_EQ(ParamGetValueString(param, str, -1), -1);
     ASSERT_EQ(ParamGetValueString(param, str, (int32_t)kParamN_enum_t), -1);
+}
+
+TEST_F(ParametersTests, GetCategoryName) {
+    const struct param_category_t* category;
+    char name[PARAM_CATEGORY_NAME_MAX_LEN];
+
+    ASSERT_EQ(ParamGetCategory(&category, 0), 0);
+    ASSERT_EQ(ParamGetCategoryName(category, name), 0);
+    ASSERT_EQ(std::string(name), "Ape");
+
+    ASSERT_EQ(ParamGetCategory(&category, 1), 0);
+    ASSERT_EQ(ParamGetCategoryName(category, name), 0);
+    ASSERT_EQ(std::string(name), "B");
+
+    ASSERT_EQ(ParamGetCategory(&category, 2), 0);
+    ASSERT_EQ(ParamGetCategoryName(category, name), 0);
+    ASSERT_EQ(std::string(name), "Cat stevens");
 }

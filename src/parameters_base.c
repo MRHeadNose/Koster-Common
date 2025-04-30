@@ -33,6 +33,17 @@ int32_t ParamGetValue(const struct param_t* param) {
     return ret_val;
 }
 
+int ParamGetId(const struct param_t* param) {
+    int ret_val = 0;
+    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
+        if (param != NULL) {
+            ret_val = param->id;
+        }
+        k_mutex_unlock(&param_mutex);
+    }
+    return ret_val;
+}
+
 int32_t ParamGetMinValue(const struct param_t* param) {
     int32_t ret_val = 0;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
