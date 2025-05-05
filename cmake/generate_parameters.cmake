@@ -11,7 +11,6 @@ add_dependencies(clean-generated-files clean-generated-files-parameters)
 endif()
 
 macro(generate_parameters NAME GENERATOR CONFIG_FILE OUTPUT_SOURCE OUTPUT_HEADER)
-    message(GEN: ${OUTPUT_HEADER} ${OUTPUT_SOURCE})
     add_custom_command(
         OUTPUT ${OUTPUT_HEADER} ${OUTPUT_SOURCE}
         COMMAND ${PYTHON3_BIN} ${GENERATOR} --config-file ${CONFIG_FILE} --output-source ${OUTPUT_SOURCE} --output-header ${OUTPUT_HEADER}
