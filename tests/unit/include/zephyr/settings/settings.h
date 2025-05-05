@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sys/types.h>
+
 #include "fff/fff.h"
 
 typedef ssize_t (*settings_read_cb)(void *cb_arg, void *data, size_t len);
@@ -14,7 +16,7 @@ struct settings_handler {
     sys_snode_t node;
 };
 
-FAKE_VALUE_FUNC(int, settings_subsys_init);
-FAKE_VALUE_FUNC(int, settings_load);
-FAKE_VALUE_FUNC(int, settings_register, struct settings_handler *);
-FAKE_VALUE_FUNC(int, settings_save_one, const char *, const void *, size_t);
+DECLARE_FAKE_VALUE_FUNC(int, settings_subsys_init);
+DECLARE_FAKE_VALUE_FUNC(int, settings_load);
+DECLARE_FAKE_VALUE_FUNC(int, settings_register, struct settings_handler *);
+DECLARE_FAKE_VALUE_FUNC(int, settings_save_one, const char *, const void *, size_t);

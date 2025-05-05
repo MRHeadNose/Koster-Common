@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #define LOG_MODULE_REGISTER(X)
+#define LOG_MODULE_DECLARE(X)
 #define LOG_ERR(...)         \
     do {                     \
         printf("INF: ");     \

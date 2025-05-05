@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Parameters>
+  <AccessLevels>
+    <AccessLevel Id="0" Name="Basic"/>
+    <AccessLevel Id="1" Name="Advanced"/>
+    <AccessLevel Id="2" Name="Factory"/>
+  </AccessLevels>
+  
+  <Categories>
+    <Category Id="0" Name="Factory setting" />
+    <Category Id="1" Name="Language and units" />
+    <Category Id="2" Name="Alarm" />
+    <Category Id="3" Name="Radar" />
+    <Category Id="4" Name="Misc." />
+  </Categories>
+  
+  <Enums>
+    <Enum Name="machine_type_t">
+      <EnumValue Name="SingleHeater" Value="0" />
+      <EnumValue Name="SHC480Y" Value="1" />
+      <EnumValue Name="SH_Precise" Value="2" />
+      <EnumValue Name="i5_1G5" Value="3" />
+      <EnumValue Name="i5_2G5" Value="4" />
+      <EnumValue Name="i5_10G5" Value="5" />
+      <EnumValue Name="i5_20G5" Value="6" />
+      <EnumValue Name="i425DTP" Value="7" />
+      <EnumValue Name="i425x2DTP" Value="8" />
+      <EnumValue Name="i425DTP480" Value="9" />
+      <EnumValue Name="425x2DTP480" Value="10" />
+      <EnumValue Name="i528DTP" Value="11" />
+      <EnumValue Name="i528x2DTP" Value="12" />
+      <EnumValue Name="i528DTP480" Value="13" />
+      <EnumValue Name="528x2DTP480" Value="14" />
+      <EnumValue Name="i465DTP" Value="15" />
+      <EnumValue Name="i465x2DTP" Value="16" />
+      <EnumValue Name="i465DTP10" Value="17" />
+      <EnumValue Name="464x2DTP10" Value="18" />
+      <EnumValue Name="Start_Production" Value="19" />
+    </Enum>
+    <Enum Name="language_t">
+      <EnumValue Name="English" Value="0" />
+      <EnumValue Name="Swedish" Value="1" />
+    </Enum>
+    <Enum Name="on_off_t">
+      <EnumValue Name="Off" Value="0" />
+      <EnumValue Name="On" Value="1" />
+    </Enum>
+    <Enum Name="yes_no_t">
+      <EnumValue Name="No" Value="0" />
+      <EnumValue Name="Yes" Value="1" />
+    </Enum>
+    <Enum Name="low_high_t">
+      <EnumValue Name="Low" Value="0" />
+      <EnumValue Name="High" Value="1" />
+    </Enum>
+    <Enum Name="temperature_unit_t">
+      <EnumValue Name="Celsius" Value="0" />
+      <EnumValue Name="Farenheit" Value="1" />
+    </Enum>
+  </Enums>
+
+  <Units>
+    <Unit Id="0" Name="Celsius" />
+    <Unit Id="1" Name="Meter" />
+    <Unit Id="2" Name="pc." />
+  </Units>
+  
+  <Parameter Id="0" Category="Factory setting" Name="Machine type" Type="machine_type_t" AccessLevel="Factory" Description="" Default="Start_Production" />
+  <Parameter Id="1" Category="Language and units" Name="Language" Type="language_t" AccessLevel="Advanced" Description="" Default="English" />
+  <Parameter Id="3" Category="Alarm" Name="Process alarm" Type="yes_no_t" AccessLevel="Advanced" Description="Issue alarm if temperature is more than 'Process alarm temp'" Default="Yes" />
+  <Parameter Id="49" Category="Alarm" Name="Process alarm temp" Type="uint8_t" Unit="Celsius" Min="5" Max="99" Exponent="0" AccessLevel="Advanced" Description="Temperature is displayed in this unit" Default="30" />
+  <Parameter Id="4" Category="Language and units" Name="Temperature unit" Type="temperature_unit_t" AccessLevel="Advanced" Description="Temperature is displayed in this unit" Default="Celsius" />
+  <Parameter Id="61" Category="Radar" Name="Radar Distance" Type="uint16_t" Min="2" Max="14" Exponent="-1" Unit="Meter" AccessLevel="Factory" Description="" Default="10" />
+  <Parameter Id="11" Category="Misc." Name="Cass. T. Guard" Type="yes_no_t" AccessLevel="Factory" Description="" Default="Yes" />
+  <Parameter Id="12" Category="Misc." Name="Cassettes" Type="uint8_t" Min="1" Max="4" Exponent="0" Unit="pc." AccessLevel="Factory" Description="" Default="3" />
+  
+  <!-- <Parameter ID="0" Category="" Name="" Type="" Min="" Max="" Unit="" Exponent="0" AccessLevel="" Description="" /> -->
+  
+  <DefaultOverride MachineType="i5_1G5">
+    <DefaultValue ParameterId="0" Value="i5_1G5" />
+    <DefaultValue ParameterId="11" Value="No" />
+    <DefaultValue ParameterId="12" Value="1" />
+  </DefaultOverride>
+
+  
+</Parameters>

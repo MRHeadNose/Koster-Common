@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Parameters>
+  <AccessLevels>
+    <AccessLevel Id="0" Name="Foo"/>
+    <AccessLevel Id="1" Name="Bar"/>
+  </AccessLevels>
+  
+  <Categories>
+    <Category Id="0" Name="Cat stevens" />
+    <Category Id="1" Name="Ape" />
+    <Category Id="2" Name="B" />
+  </Categories>
+  
+  <Enums>
+    <Enum Name="machine_type_t">
+      <EnumValue Name="Type1" Value="0" />
+      <EnumValue Name="Type2" Value="1" />
+      <EnumValue Name="Type3" Value="2" />
+    </Enum>
+    <Enum Name="enum_t">
+      <EnumValue Name="Value0" Value="0" />
+      <EnumValue Name="Value1" Value="1" />
+      <EnumValue Name="Value2" Value="2" />
+    </Enum>
+  </Enums>
+
+  <Units>
+    <Unit Id="0" Name="Unit0" />
+    <Unit Id="1" Name="Unit1" />
+  </Units>
+  
+  <Parameter Id="0" Category="Cat stevens" Name="Machine type" Type="machine_type_t" AccessLevel="Foo" Description="" Default="Type1" />
+  <Parameter Id="1" Category="Cat stevens" Name="EnumParam" Type="enum_t" AccessLevel="Foo" Description="" Default="Value1" />
+  <Parameter Id="10" Category="Ape" Name="UInt8Param" Type="uint8_t" Min="100" Max="200" Exponent="0" Unit="Unit0" AccessLevel="Bar" Description="" Default="123" />
+  <Parameter Id="2" Category="B" Name="Int32Param" Type="int32_t" Min="1000000" Max="2000000" Exponent="-6" Unit="Unit1" AccessLevel="Foo" Description="" Default="1337000" />
+  <Parameter Id="3" Category="B" Name="Unused" Type="int32_t" Min="0" Max="1" Exponent="0" Unit="Unit1" AccessLevel="Foo" Description="" Default="0" />
+  
+  <DefaultOverride MachineType="Type2">
+    <DefaultValue ParameterId="1" Value="Value2" />
+    <DefaultValue ParameterId="2" Value="1000000" />
+  </DefaultOverride>
+  <DefaultOverride MachineType="Type3">
+    <DefaultValue ParameterId="1" Value="Value0" />
+    <DefaultValue ParameterId="2" Value="2000000" />
+  </DefaultOverride>
+
+</Parameters>

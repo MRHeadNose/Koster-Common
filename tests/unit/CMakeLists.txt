@@ -15,5 +15,14 @@ FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
 
+add_library(zephyr-mocks
+  ${CMAKE_CURRENT_LIST_DIR}/include/zephyr/kernel.c
+  ${CMAKE_CURRENT_LIST_DIR}/include/zephyr/settings/settings.c
+  )
+target_include_directories(zephyr-mocks PUBLIC
+  ${CMAKE_CURRENT_LIST_DIR}/include
+  )
+
 enable_testing()
 add_subdirectory(recipe)
+add_subdirectory(parameters)
