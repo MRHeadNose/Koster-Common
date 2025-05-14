@@ -19,18 +19,18 @@ TEST_F(RecipeTests, RecipeInit_AddsDefaultRecipes) {
     char name[RECIPE_NAME_MAX_SIZE];
     ASSERT_EQ(RecipeGet(&recipe, 0), 0);
     ASSERT_EQ(RecipeGetName(recipe, name, RECIPE_NAME_MAX_SIZE), 0);
-    ASSERT_STREQ(name, "recipe 0");
+    ASSERT_STREQ(name, "IR recipe");
 
     ASSERT_EQ(RecipeGet(&recipe, 1), 0);
     ASSERT_EQ(RecipeGetName(recipe, name, RECIPE_NAME_MAX_SIZE), 0);
-    ASSERT_STREQ(name, "recipe 1");
+    ASSERT_STREQ(name, "3 step IR");
 }
 
 TEST_F(RecipeTests, RecipeDelete_DeleteLastRecipe) {
     recipe_t *recipe;
     char name[RECIPE_NAME_MAX_SIZE];
 
-    // Delete recipe 1
+    // Delete 3 step IR
     ASSERT_EQ(RecipeGet(&recipe, 1), 0);
     ASSERT_EQ(RecipeDelete(recipe), 0);
 
@@ -38,7 +38,7 @@ TEST_F(RecipeTests, RecipeDelete_DeleteLastRecipe) {
 
     ASSERT_EQ(RecipeGet(&recipe, 0), 0);
     ASSERT_EQ(RecipeGetName(recipe, name, RECIPE_NAME_MAX_SIZE), 0);
-    ASSERT_STREQ(name, "recipe 0");
+    ASSERT_STREQ(name, "IR recipe");
 
     ASSERT_EQ(RecipeGet(&recipe, 1), -1);
 }
@@ -47,7 +47,7 @@ TEST_F(RecipeTests, RecipeDelete_DeleteFirstRecipe) {
     recipe_t *recipe;
     char name[RECIPE_NAME_MAX_SIZE];
 
-    // Delete recipe 0
+    // Delete IR recipe
     ASSERT_EQ(RecipeGet(&recipe, 0), 0);
     ASSERT_EQ(RecipeDelete(recipe), 0);
 
@@ -55,7 +55,7 @@ TEST_F(RecipeTests, RecipeDelete_DeleteFirstRecipe) {
 
     ASSERT_EQ(RecipeGet(&recipe, 0), 0);
     ASSERT_EQ(RecipeGetName(recipe, name, RECIPE_NAME_MAX_SIZE), 0);
-    ASSERT_STREQ(name, "recipe 1");
+    ASSERT_STREQ(name, "3 step IR");
 
     ASSERT_EQ(RecipeGet(&recipe, 1), -1);
 }

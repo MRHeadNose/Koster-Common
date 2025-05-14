@@ -418,6 +418,7 @@ int32_t RecipeTotalTime(const struct recipe_t *recipe, const bool pyro_on) {
                     } else {
                         time = recipe->pyro_off_time[0] + recipe->pyro_off_time[1] + recipe->uv_time;
                     }
+                    break;
                 case kRecipe3StepIR:
                     time = recipe->pyro_on_time[0] + recipe->pyro_on_time[1] + recipe->pyro_on_time[2];
                     break;
