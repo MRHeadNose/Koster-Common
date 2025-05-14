@@ -1,9 +1,11 @@
 #include "koster-common/recipe.h"
 
 #include <memory.h>
+#include <stdbool.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/settings/settings.h>
+#include <zephyr/sys/util.h>
 #if defined(CONFIG_SETTINGS_FILE)
 #include <zephyr/fs/fs.h>
 #include <zephyr/fs/littlefs.h>
@@ -35,7 +37,7 @@ struct recipes_t {
 
 static const struct recipe_t kDefaultRecipe0 = {
         .id = 0,
-        .name = "recipe 0",
+        .name = "IR recipe",
         .type = kRecipeIR,
         .pyro_off_time = {240, 300},
         .pyro_off_power = {20, 70},
@@ -46,14 +48,14 @@ static const struct recipe_t kDefaultRecipe0 = {
 };
 static const struct recipe_t kDefaultRecipe1 = {
         .id = 1,
-        .name = "recipe 1",
-        .type = kRecipeUV,
-        .pyro_off_time = {0},
-        .pyro_off_power = {0},
-        .pyro_on_time = {0},
-        .pyro_on_rise = {0},
-        .pyro_on_temp = {0},
-        .uv_time = 200,
+        .name = "3 step IR",
+        .type = kRecipe3StepIR,
+        .pyro_off_time = {0, 0},
+        .pyro_off_power = {0, 0},
+        .pyro_on_time = {240, 300, 120},
+        .pyro_on_rise = {15, 25, 20},
+        .pyro_on_temp = {80, 180, 220},
+        .uv_time = 0,
 };
 
 struct k_mutex recipes_mutex;
@@ -396,6 +398,64 @@ uint16_t RecipeGetUVTime(const struct recipe_t *recipe) {
         k_mutex_unlock(&recipes_mutex);
     }
     return ret_val;
+}
+
+int32_t RecipeTotalTime(const struct recipe_t *recipe, const bool pyro_on) {
+    int32_t time = -1;
+    if (k_mutex_lock(&recipes_mutex, K_FOREVER) == 0) {
+        if (recipe != NULL) {
+            switch (recipe->type) {
+                case kRecipeIR:
+                    if (pyro_on) {
+                        time = recipe->pyro_on_time[0] + recipe->pyro_on_time[1];
+                    } else {
+                        time = recipe->pyro_off_time[0] + recipe->pyro_off_time[1];
+                    }
+                    break;
+                case kRecipeUVIR:
+                    if (pyro_on) {
+                        time = recipe->pyro_on_time[0] + recipe->pyro_on_time[1] + recipe->uv_time;
+                    } else {
+                        time = recipe->pyro_off_time[0] + recipe->pyro_off_time[1] + recipe->uv_time;
+                    }
+                case kRecipe3StepIR:
+                    time = recipe->pyro_on_time[0] + recipe->pyro_on_time[1] + recipe->pyro_on_time[2];
+                    break;
+                case kRecipeUV:
+                    time = recipe->uv_time;
+                    break;
+                default:
+                    break;
+            }
+        }
+        k_mutex_unlock(&recipes_mutex);
+    }
+    return time;
+}
+
+int32_t RecipeMaxTemperature(const struct recipe_t *recipe, const bool pyro_on) {
+    int32_t time = -1;
+    if (k_mutex_lock(&recipes_mutex, K_FOREVER) == 0) {
+        if (recipe != NULL) {
+            switch (recipe->type) {
+                case kRecipeIR:
+                case kRecipeUVIR:
+                    if (pyro_on) {
+                        time = MAX(recipe->pyro_on_temp[0], recipe->pyro_on_temp[1]);
+                    }
+                    break;
+                case kRecipe3StepIR:
+                    time = MAX(recipe->pyro_on_temp[0], MAX(recipe->pyro_on_temp[1], recipe->pyro_on_temp[2]));
+                    break;
+                case kRecipeUV:
+                    break;
+                default:
+                    break;
+            }
+        }
+        k_mutex_unlock(&recipes_mutex);
+    }
+    return time;
 }
 
 void RecipePrintAll() {

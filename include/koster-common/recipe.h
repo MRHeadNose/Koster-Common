@@ -1,6 +1,7 @@
 #ifndef KOSTER_COMMON_RECIPE_H
 #define KOSTER_COMMON_RECIPE_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -213,6 +214,24 @@ uint16_t RecipeGetPyroOnTemp(const struct recipe_t *recipe, uint8_t timer_number
  * @return the time in seconds
  */
 uint16_t RecipeGetUVTime(const struct recipe_t *recipe);
+
+/**
+ * Get the maximum target temperature
+ *
+ * @param recipe   pointer to the recipe
+ * @param pyro_on  set to true if pyrometer (i.e. temperature control) is on.
+ * @return maximum temperature in Celsius, or -1 on error
+ */
+int32_t RecipeMaxTemperature(const struct recipe_t *recipe, const bool pyro_on);
+
+/**
+ * Get the total recipe time
+ *
+ * @param recipe   pointer to the recipe
+ * @param pyro_on  set to true if pyrometer (i.e. temperature control) is on.
+ * @return the time in seconds, or -1 on error
+ */
+int32_t RecipeTotalTime(const struct recipe_t *recipe, const bool pyro_on);
 
 void RecipePrintAll();
 

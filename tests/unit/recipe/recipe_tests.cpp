@@ -229,3 +229,114 @@ TEST_F(RecipeTests, AddGetAndDeleteAFew) {
     ASSERT_EQ(RecipeGetPyroOnTemp(recipe, 2), 37);
     ASSERT_EQ(RecipeGetUVTime(recipe), 38);
 }
+
+TEST_F(RecipeTests, RecipeTotalTimeIR) {
+    recipe_t *recipe;
+    ASSERT_EQ(RecipeNew(&recipe), 0);
+    ASSERT_EQ(RecipeSetType(recipe, kRecipeIR), 0);
+    ASSERT_EQ(RecipeSetPyroOffTime(recipe, 0, 1), 0);
+    ASSERT_EQ(RecipeSetPyroOffTime(recipe, 1, 2), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 0, 10), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 1, 20), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 2, 100), 0);
+    ASSERT_EQ(RecipeSetUVTime(recipe, 200), 0);
+
+    ASSERT_EQ(RecipeTotalTime(recipe, true), 30);  // pyro on
+    ASSERT_EQ(RecipeTotalTime(recipe, false), 3);  // pyro off
+}
+
+TEST_F(RecipeTests, RecipeTotalTime3StepIR) {
+    recipe_t *recipe;
+    ASSERT_EQ(RecipeNew(&recipe), 0);
+    ASSERT_EQ(RecipeSetType(recipe, kRecipe3StepIR), 0);
+    ASSERT_EQ(RecipeSetPyroOffTime(recipe, 0, 1), 0);
+    ASSERT_EQ(RecipeSetPyroOffTime(recipe, 1, 2), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 0, 10), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 1, 20), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 2, 100), 0);
+    ASSERT_EQ(RecipeSetUVTime(recipe, 200), 0);
+
+    ASSERT_EQ(RecipeTotalTime(recipe, true), 130);   // pyro on
+    ASSERT_EQ(RecipeTotalTime(recipe, false), 130);  // pyro off
+}
+
+TEST_F(RecipeTests, RecipeTotalTimeUv) {
+    recipe_t *recipe;
+    ASSERT_EQ(RecipeNew(&recipe), 0);
+    ASSERT_EQ(RecipeSetType(recipe, kRecipeUV), 0);
+    ASSERT_EQ(RecipeSetPyroOffTime(recipe, 0, 1), 0);
+    ASSERT_EQ(RecipeSetPyroOffTime(recipe, 1, 2), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 0, 10), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 1, 20), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 2, 100), 0);
+    ASSERT_EQ(RecipeSetUVTime(recipe, 200), 0);
+
+    ASSERT_EQ(RecipeTotalTime(recipe, true), 200);   // pyro on
+    ASSERT_EQ(RecipeTotalTime(recipe, false), 200);  // pyro off
+}
+
+TEST_F(RecipeTests, RecipeTotalTimeUVIR) {
+    recipe_t *recipe;
+    ASSERT_EQ(RecipeNew(&recipe), 0);
+    ASSERT_EQ(RecipeSetType(recipe, kRecipeUVIR), 0);
+    ASSERT_EQ(RecipeSetPyroOffTime(recipe, 0, 1), 0);
+    ASSERT_EQ(RecipeSetPyroOffTime(recipe, 1, 2), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 0, 10), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 1, 20), 0);
+    ASSERT_EQ(RecipeSetPyroOnTime(recipe, 2, 100), 0);
+    ASSERT_EQ(RecipeSetUVTime(recipe, 200), 0);
+
+    ASSERT_EQ(RecipeTotalTime(recipe, true), 230);   // pyro on
+    ASSERT_EQ(RecipeTotalTime(recipe, false), 203);  // pyro off
+}
+
+TEST_F(RecipeTests, RecipeMaxTemperatureIR) {
+    recipe_t *recipe;
+    ASSERT_EQ(RecipeNew(&recipe), 0);
+    ASSERT_EQ(RecipeSetType(recipe, kRecipeIR), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 0, 10), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 1, 20), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 2, 100), 0);
+
+    ASSERT_EQ(RecipeMaxTemperature(recipe, true), 20);  // pyro on
+    // No temperature defined for pyro off
+    ASSERT_EQ(RecipeMaxTemperature(recipe, false), -1);  // pyro off
+}
+
+TEST_F(RecipeTests, RecipeMaxTemperatureUVIR) {
+    recipe_t *recipe;
+    ASSERT_EQ(RecipeNew(&recipe), 0);
+    ASSERT_EQ(RecipeSetType(recipe, kRecipeUVIR), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 0, 10), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 1, 20), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 2, 100), 0);
+
+    ASSERT_EQ(RecipeMaxTemperature(recipe, true), 20);  // pyro on
+    // No temperature defined for pyro off
+    ASSERT_EQ(RecipeMaxTemperature(recipe, false), -1);  // pyro off
+}
+
+TEST_F(RecipeTests, RecipeMaxTemperatureUV) {
+    recipe_t *recipe;
+    ASSERT_EQ(RecipeNew(&recipe), 0);
+    ASSERT_EQ(RecipeSetType(recipe, kRecipeUV), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 0, 10), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 1, 20), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 2, 100), 0);
+
+    // No temperature defined for UV recipe
+    ASSERT_EQ(RecipeMaxTemperature(recipe, true), -1);   // pyro on
+    ASSERT_EQ(RecipeMaxTemperature(recipe, false), -1);  // pyro off
+}
+
+TEST_F(RecipeTests, RecipeMaxTemperature3StepIR) {
+    recipe_t *recipe;
+    ASSERT_EQ(RecipeNew(&recipe), 0);
+    ASSERT_EQ(RecipeSetType(recipe, kRecipe3StepIR), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 0, 10), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 1, 20), 0);
+    ASSERT_EQ(RecipeSetPyroOnTemp(recipe, 2, 100), 0);
+
+    ASSERT_EQ(RecipeMaxTemperature(recipe, true), 100);   // pyro on
+    ASSERT_EQ(RecipeMaxTemperature(recipe, false), 100);  // pyro off
+}
