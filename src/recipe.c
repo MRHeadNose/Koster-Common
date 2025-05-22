@@ -4,6 +4,10 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/settings/settings.h>
+
+#include "default_recipes.h"
+#include "recipe_types.h"
+
 #if defined(CONFIG_SETTINGS_FILE)
 #include <zephyr/fs/fs.h>
 #include <zephyr/fs/littlefs.h>
@@ -12,49 +16,8 @@
 LOG_MODULE_DECLARE(koster_common);
 
 #define RECIPES_SETTING "recipe/recipes"
-#define RECIPE_NAME_MAX_STORAGE_SIZE RECIPE_NAME_MAX_SIZE + 1
 
 static struct settings_handler handler_;
-
-struct recipe_t {
-    uint8_t id;
-    char name[RECIPE_NAME_MAX_STORAGE_SIZE];
-    recipe_type_t type;
-    uint16_t pyro_off_time[RECIPE_MAX_PYRO_OFF_TIMERS];  // pyro-off time (seconds)
-    uint8_t pyro_off_power[RECIPE_MAX_PYRO_OFF_TIMERS];  // pyro-off power (percent)
-    uint16_t pyro_on_time[RECIPE_MAX_PYRO_ON_TIMERS];    // pyro-on time (seconds)
-    uint8_t pyro_on_rise[RECIPE_MAX_PYRO_ON_TIMERS];     // pyro-on temperature rise (celsius per minute)
-    uint16_t pyro_on_temp[RECIPE_MAX_PYRO_ON_TIMERS];    // pyro-on end temperature (celsius)
-    uint16_t uv_time;                                    // UV time (seconds)
-};
-
-struct recipes_t {
-    uint8_t n_recipes;
-    struct recipe_t recipes[RECIPE_MAX_RECIPES];
-};
-
-static const struct recipe_t kDefaultRecipe0 = {
-        .id = 0,
-        .name = "recipe 0",
-        .type = kRecipeIR,
-        .pyro_off_time = {240, 300},
-        .pyro_off_power = {20, 70},
-        .pyro_on_time = {240, 300, 0},
-        .pyro_on_rise = {15, 25, 0},
-        .pyro_on_temp = {80, 180, 0},
-        .uv_time = 0,
-};
-static const struct recipe_t kDefaultRecipe1 = {
-        .id = 1,
-        .name = "recipe 1",
-        .type = kRecipeUV,
-        .pyro_off_time = {0},
-        .pyro_off_power = {0},
-        .pyro_on_time = {0},
-        .pyro_on_rise = {0},
-        .pyro_on_temp = {0},
-        .uv_time = 200,
-};
 
 struct k_mutex recipes_mutex;
 
@@ -125,10 +88,11 @@ int RecipeInit() {
     if (k_mutex_lock(&recipes_mutex, K_FOREVER) == 0) {
         if (recipes_.n_recipes == 0) {
             LOG_INF("[recipe] No recipes found. Adding default recipes.");
-            recipes_.n_recipes = 2;
-            recipes_.recipes[0] = kDefaultRecipe0;
-            recipes_.recipes[1] = kDefaultRecipe1;
-            RecipePersistAll();
+            if (DefaultRecipesGet(&recipes_) == 0) {
+                RecipePersistAll();
+            } else {
+                LOG_ERR("[recipe] Unable to get default recipes.");
+            }
         } else {
             LOG_INF("[recipe] Loaded %d recipes.", recipes_.n_recipes);
         }
