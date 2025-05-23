@@ -29,7 +29,7 @@ int DefaultRecipesGetFake(struct recipes_t *recipes) {
     recipes->recipes[0].pyro_off_power[1] = 70;
     recipes->recipes[0].uv_time = 0;
 
-    recipes->recipes[1].id = 0;
+    recipes->recipes[1].id = 1;
     recipes->recipes[1].type = kRecipeUV;
     strncpy(recipes->recipes[1].name, "recipe 1", RECIPE_NAME_MAX_SIZE);
     recipes->recipes[1].pyro_on_time[0] = 0;

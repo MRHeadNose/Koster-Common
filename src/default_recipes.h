@@ -4,14 +4,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-struct recipes_t;
+#include "recipe_types.h"
 
 /**
  * Get default recipes
  *
  * @param recipes the recipes struct to fill with default recipes
- * @return 0 on success, -1 on failure.
  */
-int DefaultRecipesGet(struct recipes_t* recipes);
+void DefaultRecipesGet(struct recipes_t* recipes);
 
 #endif

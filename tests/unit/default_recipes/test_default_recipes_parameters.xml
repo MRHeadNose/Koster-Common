@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Parameters>
+
+  <AccessLevels>
+    <AccessLevel Id="0" Name="Test"/>
+  </AccessLevels>
+
+  <Categories>
+    <Category Id="0" Name="Test" />
+  </Categories>
+  
+  <Enums>
+    <Enum Name="machine_type_t">
+      <EnumValue Name="Test" Value="0" />
+    </Enum>
+    <Enum Name="language_t">
+      <EnumValue Name="English" Value="0" />
+      <EnumValue Name="Swedish" Value="1" />
+    </Enum>
+  </Enums>
+
+  <Parameter Id="0" Category="Test" Name="Machine type" Type="machine_type_t" AccessLevel="Test" Description="" Default="Test" />
+  <Parameter Id="1" Category="Test" Name="Language" Type="language_t" AccessLevel="Test" Description="" Default="English" />
+</Parameters>

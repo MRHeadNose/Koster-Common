@@ -25,14 +25,14 @@
     <UV Time="300"/>
   </Recipe>
 
-  <Recipe Name="Special Glue" Type="ThreeStepIR">
+  <Recipe Name="Special Glue" Type="3StepIR">
     <PyroOnTimer1 Time="240" Rise="15" End="60"/>
     <PyroOnTimer2 Time="480" Rise="20" End="80"/>
     <PyroOnTimer3 Time="900" Rise="20" End="120"/>
     <LanguageOverride Lang="SE" Name="Speciallim"/>
   </Recipe>
   
-  <Recipe Name="Special IR-UV clear coat" Type="IRUV">
+  <Recipe Name="Special IR-UV clear coat" Type="UVIR">
     <PyroOffTimer1 Time="300" Power="50"/>
     <PyroOffTimer2 Time="540" Power="80"/>
     <PyroOnTimer1 Time="240" Rise="15" End="60"/>

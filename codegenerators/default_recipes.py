@@ -16,11 +16,14 @@ header = """
 
 {function_declarations}
 
+void DefaultRecipesFill(struct recipes_t *recipes);
+
 #endif
 """
 
 source = """
 #include "default_recipes_generated.h"
+#include "koster-common/recipe.h"
 
 #include <string.h>
 
@@ -32,14 +35,19 @@ static struct recipes_t default_recipes = {{
 }};
 
 {function_definitions}
+
+void DefaultRecipesFill(struct recipes_t *recipes){{
+    memcpy(recipes, &default_recipes, sizeof(struct recipes_t));
+}}
+
 """
 
-function_declaration = "int DefaultRecipesSet{lang}();"
+function_declaration = "void DefaultRecipesSet{lang}();"
 
 recipe = '        {{{id}, "{name}", kRecipe{type}, {{{pyro_off_time}}}, {{{pyro_off_power}}}, {{{pyro_on_time}}}, {{{pyro_on_rise}}}, {{{pyro_on_temp}}}, {uv_time}}}'
 
 function_definition = """
-int DefaultRecipesSet{lang}(){{
+void DefaultRecipesSet{lang}(){{
 {lang_setters}
 }}
 """
@@ -81,7 +89,7 @@ class Configuration:
             
             recipe_type = element.get("Type")
             if recipe_type not in valid_types:
-                error_txt = f'Invalid type "{recipe_type}" for recipe "{name}". Valid values are {", ".join(valid_types)}'
+                error_txt = f'Invalid type "{recipe_type}" for recipe "{default_name}". Valid values are {", ".join(valid_types)}'
                 raise RuntimeError(error_txt)
 
             pyro_on_time = ['0', '0', '0']
@@ -105,7 +113,7 @@ class Configuration:
                 
             pyro_off_time = ['0', '0']
             pyro_off_power = ['0', '0']
-            if recipe_type in ["IR", "IRUV"]:
+            if recipe_type in ["IR", "UVIR"]:
                 t1 = element.find("PyroOffTimer1")
                 t2 = element.find("PyroOffTimer2")
                 pyro_off_time[0] = t1.get('Time')
@@ -117,7 +125,7 @@ class Configuration:
             if recipe_type in ["UV", "IRUV"]:
                 uv_time = element.find("UV").get("Time")
             
-            names = {}
+            names = {"EN" : default_name}
             for lang_override in element.iter("LanguageOverride"):
                 lang = lang_override.get("Lang")
                 if lang in names:
@@ -156,12 +164,6 @@ class SourceGenerator:
         for lang in self.config.langs:
             function_declarations.append(function_declaration.format(lang=lang))
             
-        header_content = header.format(
-            function_declarations="\n".join(function_declarations)
-        )
-        with open(header_path, 'w') as file_:
-            file_.write(header_content)
-
         recipes = []
         function_definitions = []
         for r in self.config.recipes:
@@ -186,6 +188,12 @@ class SourceGenerator:
                 
             function_definitions.append(function_definition.format(lang=lang, lang_setters="\n".join(lang_setters)))
             
+        header_content = header.format(
+            function_declarations="\n".join(function_declarations)
+        )
+        with open(header_path, 'w') as file_:
+            file_.write(header_content)
+
         source_content = source.format(
             n_recipes=len(self.config.recipes),
             recipes=",\n".join(recipes),

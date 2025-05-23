@@ -88,11 +88,8 @@ int RecipeInit() {
     if (k_mutex_lock(&recipes_mutex, K_FOREVER) == 0) {
         if (recipes_.n_recipes == 0) {
             LOG_INF("[recipe] No recipes found. Adding default recipes.");
-            if (DefaultRecipesGet(&recipes_) == 0) {
-                RecipePersistAll();
-            } else {
-                LOG_ERR("[recipe] Unable to get default recipes.");
-            }
+            DefaultRecipesGet(&recipes_);
+            RecipePersistAll();
         } else {
             LOG_INF("[recipe] Loaded %d recipes.", recipes_.n_recipes);
         }
