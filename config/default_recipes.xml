@@ -21,61 +21,61 @@
     <PyroOffTimer1 Time="10" Power="30"/>
     <PyroOffTimer2 Time="5" Power="40"/>
     <PyroOnTimer1 Time="8" Rise="15" End="60"/>
-    <PyroOnTimer1 Time="7" Tise="15" End="80"/>
+    <PyroOnTimer2 Time="7" Rise="15" End="80"/>
   </Recipe>
   <Recipe Name="Waterbase" Type="IR">
     <PyroOffTimer1 Time="6" Power="50"/>
     <PyroOffTimer2 Time="0" Power="0"/>
     <PyroOnTimer1 Time="5" Rise="15" End="60"/>
-    <PyroOnTimer1 Time="0" Tise="0" End="0"/>
+    <PyroOnTimer2 Time="0" Rise="0" End="0"/>
   </Recipe>
   <Recipe Name="Basecoat" Type="IR">
     <PyroOffTimer1 Time="6" Power="50"/>
     <PyroOffTimer2 Time="0" Power="0"/>
     <PyroOnTimer1 Time="5" Rise="15" End="60"/>
-    <PyroOnTimer1 Time="0" Tise="0" End="0"/>
+    <PyroOnTimer2 Time="0" Rise="0" End="0"/>
   </Recipe>
   <Recipe Name="Topcoat" Type="IR">
     <PyroOffTimer1 Time="5" Power="50"/>
     <PyroOffTimer2 Time="9" Power="80"/>
     <PyroOnTimer1 Time="4" Rise="15" End="60"/>
-    <PyroOnTimer1 Time="8" Tise="20" End="80"/>
+    <PyroOnTimer2 Time="8" Rise="20" End="80"/>
   </Recipe>
   <Recipe Name="Clearcoat" Type="IR">
     <PyroOffTimer1 Time="5" Power="50"/>
     <PyroOffTimer2 Time="9" Power="80"/>
     <PyroOnTimer1 Time="4" Rise="15" End="60"/>
-    <PyroOnTimer1 Time="8" Tise="20" End="80"/>
+    <PyroOnTimer2 Time="8" Rise="20" End="80"/>
   </Recipe>
   <Recipe Name="Filler on plastic" Type="IR">
     <PyroOffTimer1 Time="7" Power="50"/>
     <PyroOffTimer2 Time="0" Power="0"/>
     <PyroOnTimer1 Time="4" Rise="15" End="50"/>
-    <PyroOnTimer1 Time="9" Tise="15" End="60"/>
+    <PyroOnTimer2 Time="9" Rise="15" End="60"/>
   </Recipe>
   <Recipe Name="Topcoat on plastic" Type="IR">
     <PyroOffTimer1 Time="15" Power="40"/>
     <PyroOffTimer2 Time="0" Power="0"/>
     <PyroOnTimer1 Time="6" Rise="10" End="45"/>
-    <PyroOnTimer1 Time="9" Tise="10" End="65"/>
+    <PyroOnTimer2 Time="9" Rise="10" End="65"/>
   </Recipe>
   <Recipe Name="Clearcoat on plastic" Type="IR">
     <PyroOffTimer1 Time="15" Power="40"/>
     <PyroOffTimer2 Time="0" Power="0"/>
     <PyroOnTimer1 Time="6" Rise="10" End="45"/>
-    <PyroOnTimer1 Time="9" Tise="10" End="60"/>
+    <PyroOnTimer2 Time="9" Rise="10" End="60"/>
   </Recipe>
   <Recipe Name="Finale boost" Type="IR">
     <PyroOffTimer1 Time="3" Power="100"/>
     <PyroOffTimer2 Time="0" Power="0"/>
     <PyroOnTimer1 Time="3" Rise="30" End="90"/>
-    <PyroOnTimer1 Time="0" Tise="0" End="0"/>
+    <PyroOnTimer2 Time="0" Rise="0" End="0"/>
   </Recipe>
   <Recipe Name="Soft cure" Type="IR">
     <PyroOffTimer1 Time="5" Power="40"/>
     <PyroOffTimer2 Time="10" Power="60"/>
     <PyroOnTimer1 Time="5" Rise="13" End="55"/>
-    <PyroOnTimer1 Time="10" Tise="13" End="75"/>
+    <PyroOnTimer2 Time="10" Rise="13" End="75"/>
   </Recipe>
 
   <Recipe Name="UV Filler" Type="UV">
@@ -83,6 +83,18 @@
   </Recipe>
   <Recipe Name="UV Putty" Type="UV">
     <UV Time="300"/>
+  </Recipe>
+  <Recipe Name="UV Clearcoat" Type="UV">
+    <UV Time="480"/>
+  </Recipe>
+  <Recipe Name="UV LED Filler" Type="UVLED">
+    <UV Time="60"/>
+  </Recipe>
+  <Recipe Name="UV LED Putty" Type="UVLED">
+    <UV Time="60"/>
+  </Recipe>
+  <Recipe Name="UV LED Clearcoat" Type="UVLED">
+    <UV Time="120"/>
   </Recipe>
 
   <Recipe Name="Special Glue" Type="3StepIR">

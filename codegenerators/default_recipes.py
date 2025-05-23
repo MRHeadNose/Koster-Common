@@ -67,7 +67,7 @@ class Recipe:
     pyro_on_temp : list[int]
     uv_time : int
 
-valid_types = ["IR", "UV", "3StepIR", "UVIR"]
+valid_types = ["IR", "UV", "3StepIR", "UVIR", "UVLED"]
 
 class Configuration:
     """
@@ -97,7 +97,13 @@ class Configuration:
             pyro_on_temp = ['0', '0', '0']
             if recipe_type in ["IR", "3StepIR", "UVIR"]:
                 t1 = element.find("PyroOnTimer1")
+                if t1 is None:
+                    error_txt = f'Missing element "PyroOnTimer1" for "{default_name}".'
+                    raise RuntimeError(error_txt)
                 t2 = element.find("PyroOnTimer2")
+                if t2 is None:
+                    error_txt = f'Missing element "PyroOnTimer2" for "{default_name}".'
+                    raise RuntimeError(error_txt)
                 pyro_on_time[0] = t1.get('Time')
                 pyro_on_time[1] = t2.get('Time')
                 pyro_on_rise[0] = t1.get('Rise')
@@ -107,24 +113,37 @@ class Configuration:
 
             if recipe_type == "3StepIR":
                 t3 = element.find("PyroOnTimer3")
+                if t3 is None:
+                    error_txt = f'Missing element "PyroOnTimer3" for "{default_name}".'
+                    raise RuntimeError(error_txt)
                 pyro_on_time[2] = t3.get('Time')
                 pyro_on_rise[2] = t3.get('Rise')
                 pyro_on_temp[2] = t3.get('End')
-                
+
             pyro_off_time = ['0', '0']
             pyro_off_power = ['0', '0']
             if recipe_type in ["IR", "UVIR"]:
                 t1 = element.find("PyroOffTimer1")
+                if t1 is None:
+                    error_txt = f'Missing element "PyroOffTimer1" for "{default_name}".'
+                    raise RuntimeError(error_txt)
                 t2 = element.find("PyroOffTimer2")
+                if t2 is None:
+                    error_txt = f'Missing element "PyroOffTimer2" for "{default_name}".'
+                    raise RuntimeError(error_txt)
                 pyro_off_time[0] = t1.get('Time')
                 pyro_off_time[1] = t2.get('Time')
                 pyro_off_power[0] = t1.get('Power')
                 pyro_off_power[1] = t2.get('Power')
 
             uv_time = '0'
-            if recipe_type in ["UV", "IRUV"]:
-                uv_time = element.find("UV").get("Time")
-            
+            if recipe_type in ["UV", "IRUV", "UVLED"]:
+                uv = element.find("UV")
+                if uv is None:
+                    error_txt = f'Missing element "UV" for "{default_name}".'
+                    raise RuntimeError(error_txt)
+                uv_time = uv.get("Time")
+
             names = {"EN" : default_name}
             for lang_override in element.iter("LanguageOverride"):
                 lang = lang_override.get("Lang")
@@ -134,10 +153,21 @@ class Configuration:
 
                 if lang not in self.langs:
                     self.langs.append(lang)
-                
+
                 name = lang_override.get("Name")
                 names[lang] = name
 
+
+            print(i,
+                   default_name,
+                   names,
+                   recipe_type,
+                   pyro_off_time,
+                   pyro_off_power,
+                   pyro_on_time,
+                   pyro_on_rise,
+                   pyro_on_temp,
+                   uv_time)
             self.recipes.append(
                 Recipe(i,
                        default_name,
