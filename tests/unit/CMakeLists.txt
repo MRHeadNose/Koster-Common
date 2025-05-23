@@ -24,5 +24,6 @@ target_include_directories(zephyr-mocks PUBLIC
   )
 
 enable_testing()
-add_subdirectory(recipe)
+add_subdirectory(default_recipes)
 add_subdirectory(parameters)
+add_subdirectory(recipe)

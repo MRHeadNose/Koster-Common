@@ -3,8 +3,8 @@ set(TEST_NAME parameters_tests)
 # Generated files
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../cmake)
 
-include(generate_parameters)
-generate_parameters(koster-common-parameters
+include(code_generator)
+generate_code(test-parameters
   ${CMAKE_CURRENT_LIST_DIR}/../../../codegenerators/parameters.py
   ${CMAKE_CURRENT_LIST_DIR}/test_parameters.xml
   ${CMAKE_CURRENT_BINARY_DIR}/generated/parameters.c

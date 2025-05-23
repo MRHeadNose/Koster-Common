@@ -13,9 +13,17 @@
 // Maximum number of pyro-off timers
 #define RECIPE_MAX_PYRO_OFF_TIMERS 2
 
-typedef enum { kRecipeNone, kRecipeIR, kRecipeUVIR, kRecipe3StepIR, kRecipeUV, kRecipeNTypes } recipe_type_t;
+typedef enum {
+    kRecipeNone,
+    kRecipeIR,
+    kRecipeUVIR,
+    kRecipe3StepIR,
+    kRecipeUV,
+    kRecipeUVLED,
+    kRecipeNTypes
+} recipe_type_t;
 // Ordered recipe type string for use in LVGL rollers
-#define RECIPE_TYPES_STRING "IR\nIR & UV\n3 Step IR\nUV"
+#define RECIPE_TYPES_STRING "IR\nIR & UV\n3 Step IR\nUV\nUV LED"
 
 struct recipe_t;
 

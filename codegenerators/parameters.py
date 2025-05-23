@@ -62,7 +62,7 @@ int ParamSet{name}(const {type} value);
 """
 
 source = """
-#include "koster-common/parameters.h"
+#include "{parameters_header}"
 #include "parameters_private.h"
 #include <string.h>
 #include <zephyr/kernel.h>
@@ -619,7 +619,8 @@ class SourceGenerator:
             param_descriptions="\n".join(param_descriptions),
             category_names="\n".join(category_names),
             param_production_default_values="\n    ".join(param_default_values),
-            param_default_overrides="\n".join(param_default_overrides)
+            param_default_overrides="\n".join(param_default_overrides),
+            parameters_header=header_path.relative_to(os.path.commonprefix([source_path.parent, header_path.parent])),
         )
         with open(source_path, 'w') as file_:
             file_.write(source_content)
