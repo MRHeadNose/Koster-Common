@@ -97,7 +97,16 @@ typedef enum { kRunnerErrorA, kRunnerErrorB } runner_error_t;
 struct kzbus_error_msg_t {
     runner_error_t error_type;
     uint8_t error_id;
-    /** the ID of the Vinga node the error originated from, if any  */
+    /** the ID of the Vinga node the error originated from  */
+    uint8_t vinga_id;
+};
+
+/**
+ * Sent from the Runner. Sent on channel kzbus_ircam_chan.
+ */
+struct kzbus_ircam_msg_t {
+    uint16_t* img_buf;
+    /** the ID of the Vinga node the IR image originated from  */
     uint8_t vinga_id;
 };
 
@@ -112,6 +121,7 @@ typedef enum {
     kMsgProgram,
     kMsgTemperature,
     kMsgDistance,
+    kMsgIRCamera,
     kMsgError
 } kzbus_msg_type_t;
 
@@ -134,6 +144,7 @@ struct kzbus_msg_t {
         struct kzbus_temperature_msg_t temperature_msg;
         struct kzbus_distance_msg_t distance_msg;
         struct kzbus_error_msg_t error_msg;
+        struct kzbus_ircam_msg_t ircam_msg;
     };
 };
 
@@ -147,7 +158,8 @@ ZBUS_CHAN_DECLARE(kzbus_program_chan,      // Channel for program state messages
                   kzbus_temperature_chan,  // Channel for temperature messages (from program runner)
                   kzbus_distance_chan,     // Channel for distance messages (from program runner)
                   kzbus_error_chan,        // Channel for error messages (from program runner)
-                  kzbus_control_chan       // Channel for control messages (to program runner)
+                  kzbus_control_chan,      // Channel for control messages (to program runner)
+                  kzbus_ircam_chan         // Channel for IR camera (from program runner)
 );
 
 #endif
