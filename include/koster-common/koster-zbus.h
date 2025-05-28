@@ -105,7 +105,9 @@ struct kzbus_error_msg_t {
  * Sent from the Runner. Sent on channel kzbus_ircam_chan.
  */
 struct kzbus_ircam_msg_t {
-    uint16_t* img_buf;
+    int16_t* img_buf;
+    int16_t min_temperature;
+    int16_t max_temperature;
     /** the ID of the Vinga node the IR image originated from  */
     uint8_t vinga_id;
 };
