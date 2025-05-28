@@ -1,14 +1,62 @@
 #include "gtest/gtest.h"
+
 extern "C" {
+
 #include "fff/fff.h"
 #include "koster-common/recipe.h"
-}
+#include "recipe_types.h"
 
 DEFINE_FFF_GLOBALS;
+FAKE_VALUE_FUNC(int, DefaultRecipesGet, struct recipes_t *);
+int DefaultRecipesGetFake(struct recipes_t *recipes) {
+    recipes->n_recipes = 2;
+
+    recipes->recipes[0].id = 0;
+    recipes->recipes[0].type = kRecipeIR;
+    strncpy(recipes->recipes[0].name, "recipe 0", RECIPE_NAME_MAX_SIZE);
+    recipes->recipes[0].pyro_on_time[0] = 240;
+    recipes->recipes[0].pyro_on_time[1] = 300;
+    recipes->recipes[0].pyro_on_time[2] = 0;
+    recipes->recipes[0].pyro_on_rise[0] = 15;
+    recipes->recipes[0].pyro_on_rise[1] = 25;
+    recipes->recipes[0].pyro_on_rise[2] = 0;
+    recipes->recipes[0].pyro_on_temp[0] = 80;
+    recipes->recipes[0].pyro_on_temp[1] = 180;
+    recipes->recipes[0].pyro_on_temp[2] = 0;
+    recipes->recipes[0].pyro_off_time[0] = 240;
+    recipes->recipes[0].pyro_off_time[1] = 300;
+    recipes->recipes[0].pyro_off_power[0] = 20;
+    recipes->recipes[0].pyro_off_power[1] = 70;
+    recipes->recipes[0].uv_time = 0;
+
+    recipes->recipes[1].id = 1;
+    recipes->recipes[1].type = kRecipeUV;
+    strncpy(recipes->recipes[1].name, "recipe 1", RECIPE_NAME_MAX_SIZE);
+    recipes->recipes[1].pyro_on_time[0] = 0;
+    recipes->recipes[1].pyro_on_time[1] = 0;
+    recipes->recipes[1].pyro_on_time[2] = 0;
+    recipes->recipes[1].pyro_on_rise[0] = 0;
+    recipes->recipes[1].pyro_on_rise[1] = 0;
+    recipes->recipes[1].pyro_on_rise[2] = 0;
+    recipes->recipes[1].pyro_on_temp[0] = 0;
+    recipes->recipes[1].pyro_on_temp[1] = 0;
+    recipes->recipes[1].pyro_on_temp[2] = 0;
+    recipes->recipes[1].pyro_off_time[0] = 0;
+    recipes->recipes[1].pyro_off_time[1] = 0;
+    recipes->recipes[1].pyro_off_power[0] = 0;
+    recipes->recipes[1].pyro_off_power[1] = 0;
+    recipes->recipes[1].uv_time = 200;
+
+    return 0;
+}
+}
 
 class RecipeTests : public testing::Test {
   protected:
-    void SetUp() override { ASSERT_EQ(RecipeInit(), 0); };
+    void SetUp() override {
+        DefaultRecipesGet_fake.custom_fake = &DefaultRecipesGetFake;
+        ASSERT_EQ(RecipeInit(), 0);
+    };
 };
 
 TEST_F(RecipeTests, RecipeInit_AddsDefaultRecipes) {

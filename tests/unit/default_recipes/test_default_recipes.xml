@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DefaultRecipes>
+  <!-- Recipe Type can be one of "IR", "UV", "3StepIR", "UVIR" -->
+  <!-- Lang can be one of "EN", "SE" -->
+  <!-- Time is in seconds -->
+
+  <Recipe Name="Filler bright" Type="IR">
+    <PyroOffTimer1 Time="480" Power="40"/>
+    <PyroOffTimer2 Time="420" Power="60"/>
+    <PyroOnTimer1 Time="480" Rise="15" End="60"/>
+    <PyroOnTimer2 Time="420" Rise="20" End="80"/>
+    <LanguageOverride Lang="SE" Name="Filler ljus"/>
+  </Recipe>
+
+  <Recipe Name="UV Filler" Type="UV">
+    <UV Time="360"/>
+  </Recipe>
+  <Recipe Name="UV Putty" Type="UV">
+    <UV Time="300"/>
+  </Recipe>
+
+  <Recipe Name="Special Glue" Type="3StepIR">
+    <PyroOnTimer1 Time="240" Rise="15" End="60"/>
+    <PyroOnTimer2 Time="480" Rise="20" End="80"/>
+    <PyroOnTimer3 Time="900" Rise="25" End="120"/>
+    <LanguageOverride Lang="SE" Name="Speciallim"/>
+  </Recipe>
+  
+  <Recipe Name="Special IR-UV clear coat" Type="UVIR">
+    <PyroOffTimer1 Time="300" Power="50"/>
+    <PyroOffTimer2 Time="540" Power="80"/>
+    <PyroOnTimer1 Time="241" Rise="15" End="60"/>
+    <PyroOnTimer2 Time="481" Rise="20" End="80"/>
+    <UV Time="300"/>
+  </Recipe>
+  
+  
+</DefaultRecipes>
