@@ -12,6 +12,7 @@
     <Category Id="2" Name="Alarm" />
     <Category Id="3" Name="Radar" />
     <Category Id="4" Name="Misc." />
+    <Category Id="5" Name="UI" />
   </Categories>
   
   <Enums>
@@ -57,6 +58,11 @@
       <EnumValue Name="Celsius" Value="0" />
       <EnumValue Name="Farenheit" Value="1" />
     </Enum>
+    <Enum Name="color_map_t">
+      <EnumValue Name="Turbo" Value="0" />
+      <EnumValue Name="Viridis" Value="1" />
+      <EnumValue Name="Inferno" Value="2" />
+    </Enum>
   </Enums>
 
   <Units>
@@ -73,6 +79,7 @@
   <Parameter Id="61" Category="Radar" Name="Radar Distance" Type="uint16_t" Min="2" Max="14" Exponent="-1" Unit="Meter" AccessLevel="Factory" Description="" Default="10" />
   <Parameter Id="11" Category="Misc." Name="Cass. T. Guard" Type="yes_no_t" AccessLevel="Factory" Description="" Default="Yes" />
   <Parameter Id="12" Category="Misc." Name="Cassettes" Type="uint8_t" Min="1" Max="4" Exponent="0" Unit="pc." AccessLevel="Factory" Description="" Default="3" />
+  <Parameter Id="70" Category="UI" Name="Heat camera colormap" Type="color_map_t" AccessLevel="Basic" Description="" Default="Turbo" />
   
   <!-- <Parameter ID="0" Category="" Name="" Type="" Min="" Max="" Unit="" Exponent="0" AccessLevel="" Description="" /> -->
   
