@@ -66,7 +66,7 @@ struct kzbus_program_msg_t {
     /** true if laser is on, false if not */
     bool laser_on;
     /** the current target (set) temperature in degrees C */
-    uint16_t target_temperature;
+    int16_t target_temperature;
 };
 
 /**
@@ -74,7 +74,7 @@ struct kzbus_program_msg_t {
  */
 struct kzbus_temperature_msg_t {
     /** temperature measurement in degrees C */
-    uint16_t temperature;
+    int16_t temperature;
     /** the ID of the Vinga node the measurement originated from  */
     uint8_t vinga_id;
 };
