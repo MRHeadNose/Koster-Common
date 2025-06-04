@@ -58,6 +58,10 @@
       <EnumValue Name="Celsius" Value="0" />
       <EnumValue Name="Farenheit" Value="1" />
     </Enum>
+    <Enum Name="distance_unit_t">
+      <EnumValue Name="Centimeters" Value="0" />
+      <EnumValue Name="Inches" Value="1" />
+    </Enum>
     <Enum Name="color_map_t">
       <EnumValue Name="Turbo" Value="0" />
       <EnumValue Name="Viridis" Value="1" />
@@ -76,6 +80,7 @@
   <Parameter Id="3" Category="Alarm" Name="Process alarm" Type="yes_no_t" AccessLevel="Advanced" Description="Issue alarm if temperature is more than 'Process alarm temp'" Default="Yes" />
   <Parameter Id="49" Category="Alarm" Name="Process alarm temp" Type="uint8_t" Unit="Celsius" Min="5" Max="99" Exponent="0" AccessLevel="Advanced" Description="Temperature is displayed in this unit" Default="30" />
   <Parameter Id="4" Category="Language and units" Name="Temperature unit" Type="temperature_unit_t" AccessLevel="Advanced" Description="Temperature is displayed in this unit" Default="Celsius" />
+  <Parameter Id="37" Category="Language and units" Name="Distance unit" Type="distance_unit_t" AccessLevel="Advanced" Description="Distance is displayed in this unit" Default="Centimeters" />
   <Parameter Id="61" Category="Radar" Name="Radar Distance" Type="uint16_t" Min="2" Max="14" Exponent="-1" Unit="Meter" AccessLevel="Factory" Description="" Default="10" />
   <Parameter Id="11" Category="Misc." Name="Cass. T. Guard" Type="yes_no_t" AccessLevel="Factory" Description="" Default="Yes" />
   <Parameter Id="12" Category="Misc." Name="Cassettes" Type="uint8_t" Min="1" Max="4" Exponent="0" Unit="pc." AccessLevel="Factory" Description="" Default="3" />
