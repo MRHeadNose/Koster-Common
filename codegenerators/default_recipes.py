@@ -158,16 +158,6 @@ class Configuration:
                 names[lang] = name
 
 
-            print(i,
-                   default_name,
-                   names,
-                   recipe_type,
-                   pyro_off_time,
-                   pyro_off_power,
-                   pyro_on_time,
-                   pyro_on_rise,
-                   pyro_on_temp,
-                   uv_time)
             self.recipes.append(
                 Recipe(i,
                        default_name,
