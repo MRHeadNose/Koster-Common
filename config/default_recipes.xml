@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <DefaultRecipes>
-  <!-- Recipe Type can be one of "IR", "UV", "ThreeStepIR", "IRUV" -->
+  <!-- Recipe Type can be one of "IR", "UV", "ThreeStepIR", "IRUV", "UVLED" -->
   <!-- Lang can be one of "EN", "SE" -->
   <!-- Time is in seconds -->
 

@@ -23,7 +23,7 @@ typedef enum {
     kRecipeNTypes
 } recipe_type_t;
 // Ordered recipe type string for use in LVGL rollers
-#define RECIPE_TYPES_STRING "IR\nIR & UV\n3 Step IR\nUV\nUV LED"
+#define RECIPE_TYPES_STRING "Select type\nIR\nIR & UV\n3 Step IR\nUV\nUV LED"
 
 struct recipe_t;
 
