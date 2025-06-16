@@ -37,7 +37,7 @@ ZBUS_CHAN_DEFINE(kzbus_error_chan,              /* Name */
                  struct kzbus_msg_t,            /* Message type */
                  NULL,                          /* Validator */
                  NULL,                          /* User data */
-                 ZBUS_OBSERVERS(ui_subscriber), /* Observers */
+                 ZBUS_OBSERVERS(),              /* Observers */
                  ZBUS_MSG_INIT(0));
 
 /**
@@ -47,7 +47,7 @@ ZBUS_CHAN_DEFINE(kzbus_ircam_chan,              /* Name */
                  struct kzbus_msg_t,            /* Message type */
                  NULL,                          /* Validator */
                  NULL,                          /* User data */
-                 ZBUS_OBSERVERS(ui_subscriber), /* Observers */
+                 ZBUS_OBSERVERS(),              /* Observers */
                  ZBUS_MSG_INIT(0));
 
 /**
