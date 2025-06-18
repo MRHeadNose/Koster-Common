@@ -18,6 +18,6 @@ int ProgramLoggerEmit(program_entry_lookup_cb_t cb, void *arg);
 
 // Read data from the entry into data buffer, returns number of bytes read.
 // Entry is given by callback from emit function
-int ProgramLoggerRead(program_log_entry_t *entry, void *data, size_t len);
+int ProgramLoggerRead(const program_log_entry_t *entry, void *data, size_t len);
 
 #endif
