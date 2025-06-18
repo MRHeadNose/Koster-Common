@@ -63,7 +63,7 @@ int ProgramLoggerWrite(const void *data, size_t len) {
 int ProgramLoggerRead(const program_log_entry_t *entry, void *data, size_t len) {
     int rc;
     size_t read_len = len;
-    struct fcb_entry_ctx *ctx = (struct fcb_entry_ctx *)entry;
+    const struct fcb_entry_ctx *ctx = (const struct fcb_entry_ctx *)entry;
     if (ctx == NULL || data == NULL) {
         return -EINVAL;
     }
