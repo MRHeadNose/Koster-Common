@@ -18,8 +18,18 @@ LOG_MODULE_DECLARE(koster_common);
 #define LOGGER_PARTITION DT_FIXED_PARTITION_ID(DT_CHOSEN(zephyr_logger_partition))
 #else
 #define LOGGER_PARTITION FIXED_PARTITION_ID(history_partition)
+#define PARTITION_SIZE FIXED_PARTITION_SIZE(history_partition)
 #endif
 
+#define SECTOR_SIZE 4096 /* Size of each sector in bytes */
+
+/* Check FCB sector limit */
+#if PARTITION_SIZE > (SECTOR_SIZE * 240)
+#warning "Partition size exceeds 240 sectors, limiting to 240 sectors"
+#define SECTORS_TO_USE 240 /* Limit to 240 sectors */
+#else
+#define SECTORS_TO_USE (PARTITION_SIZE / SECTOR_SIZE)
+#endif
 static struct fcb _fcb;
 
 int ProgramLoggerWrite(const void *data, size_t len) {
@@ -50,7 +60,7 @@ int ProgramLoggerWrite(const void *data, size_t len) {
     return rc;
 }
 
-int ProgramLoggerRead(program_log_entry_t *entry, void *data, size_t len) {
+int ProgramLoggerRead(const program_log_entry_t *entry, void *data, size_t len) {
     int rc;
     size_t read_len = len;
     struct fcb_entry_ctx *ctx = (struct fcb_entry_ctx *)entry;
@@ -84,4 +94,43 @@ int ProgramLoggerEmit(program_entry_lookup_cb_t cb, void *arg) {
     return count;
 }
 
-int ProgramLoggerInit(void) { return fcb_init(LOGGER_PARTITION, &_fcb); }
+int ProgramLoggerInit(void) {
+    int rc;
+    uint32_t cnt;
+    const struct flash_area *fap;
+    static struct flash_sector flash_sectors[SECTORS_TO_USE];
+
+    cnt = sizeof(flash_sectors) / sizeof(flash_sectors[0]);
+    rc = flash_area_get_sectors(LOGGER_PARTITION, &cnt, flash_sectors);
+    if (rc != 0 && rc != -ENOMEM) {
+        LOG_ERR("Failed to get sectors for logger partition (%d)", rc);
+        return rc;
+    }
+
+    _fcb.f_magic = 0xAFFECAFE;
+    _fcb.f_version = 1;      /*  Current version number of the data */
+    _fcb.f_sector_cnt = cnt; /* Number of elements in sector array */
+    _fcb.f_scratch_cnt = 1;
+    _fcb.f_sectors = flash_sectors; /* Pointer to array of sectors */
+
+    rc = fcb_init(LOGGER_PARTITION, &_fcb);
+
+    /* If found trash, wipe partition */
+    if (rc == -ENOMSG) {
+        rc = flash_area_open(LOGGER_PARTITION, &fap);
+        if (rc != 0) {
+            return rc;
+        }
+
+        rc = flash_area_flatten(fap, 0, fap->fa_size);
+        flash_area_close(fap);
+
+        if (rc != 0) {
+            return rc;
+        }
+        LOG_INF("Found garbage, logger partition cleared (%d)", rc);
+        /* Try init again */
+        rc = fcb_init(LOGGER_PARTITION, &_fcb);
+    }
+    return rc;
+}
