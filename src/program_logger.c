@@ -6,131 +6,166 @@
 
 #include "koster-common/program_logger.h"
 
-#include <errno.h>
-#include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
-#include <zephyr/fs/fcb.h>
+#include <zephyr/device.h>
+#include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/storage/flash_map.h>
+
+#define LOG_MAGIC 0xAFFECAFE
 
 LOG_MODULE_DECLARE(koster_common);
+
+// Written to flash as a header for each log entry
+struct log_entry_header {
+    uint32_t magic;
+    uint16_t sequence;
+    uint16_t length;
+};
+
+typedef struct {
+    const struct flash_area *fap;
+    off_t offset;
+    ssize_t data_length;
+} callback_ctx_t;
 
 #if DT_HAS_CHOSEN(zephyr_logger_partition)
 #define LOGGER_PARTITION DT_FIXED_PARTITION_ID(DT_CHOSEN(zephyr_logger_partition))
 #else
 #define LOGGER_PARTITION FIXED_PARTITION_ID(history_partition)
-#define PARTITION_SIZE FIXED_PARTITION_SIZE(history_partition)
 #endif
 
-#define SECTOR_SIZE 4096 /* Size of each sector in bytes */
+struct circular_log {
+    const struct flash_area *fap;
+    uint16_t aligned_entry_size;
+    uint16_t max_entries;
+    uint16_t head;  // next write index
+    uint16_t next_sequence;
+};
 
-/* Check FCB sector limit */
-#if PARTITION_SIZE > (SECTOR_SIZE * 240)
-#warning "Partition size exceeds 240 sectors, limiting to 240 sectors"
-#define SECTORS_TO_USE 240 /* Limit to 240 sectors */
-#else
-#define SECTORS_TO_USE (PARTITION_SIZE / SECTOR_SIZE)
-#endif
-static struct fcb _fcb;
+static struct circular_log _clog;
+
+static int scan_entries(struct circular_log *clog) {
+    struct log_entry_header hdr;
+
+    clog->next_sequence = 0;
+    clog->head = 0;
+
+    for (uint32_t i = 0; i < clog->max_entries; i++) {
+        off_t offset = i * clog->aligned_entry_size;
+
+        if (flash_area_read(clog->fap, offset, &hdr, sizeof(hdr)) != 0 || hdr.magic != LOG_MAGIC) {
+            continue;
+        }
+
+        if (hdr.sequence >= clog->next_sequence) {
+            clog->next_sequence = hdr.sequence + 1;
+            clog->head = (i + 1) % clog->max_entries;
+        }
+    }
+    return 0;
+}
 
 int ProgramLoggerWrite(const void *data, size_t len) {
     int rc;
-    struct fcb_entry loc;
-    rc = fcb_append(&_fcb, len, &loc);
-    /* If no space left */
-    if (rc == -ENOSPC) {
-        LOG_INF("No space left in FCB, trying to rotate");
-        /* Try erase oldest sector */
-        rc = fcb_rotate(&_fcb);
-        if (rc == 0) {
-            rc = fcb_append(&_fcb, len, &loc);
-        }
+    struct circular_log *clog = &_clog;
+    if (len + sizeof(struct log_entry_header) > clog->aligned_entry_size) {
+        return -EINVAL;
     }
-    if (rc) {
+
+    off_t offset = clog->aligned_entry_size * clog->head;
+    rc = flash_area_erase(clog->fap, offset, clog->aligned_entry_size);
+    if (rc != 0) {
         return rc;
     }
-    rc = flash_area_write(_fcb.fap, FCB_ENTRY_FA_DATA_OFF(loc), data, len);
-    if (rc) {
-        LOG_ERR("Failed to write data to FCB (%d)", rc);
+    struct log_entry_header hdr = {
+            .magic = LOG_MAGIC,
+            .sequence = clog->next_sequence++,
+            .length = len,
+    };
+    clog->head = (clog->head + 1) % clog->max_entries;
+
+    rc = flash_area_write(clog->fap, offset, &hdr, sizeof(hdr));
+    if (rc != 0) {
         return rc;
     }
-    rc = fcb_append_finish(&_fcb, &loc);
-    if (rc) {
-        LOG_ERR("Failed to finish fcb_append (%d)", rc);
+    rc = flash_area_write(clog->fap, offset + sizeof(hdr), data, len);
+    if (rc != 0) {
+        return rc;
     }
-    return rc;
+    return 0;
 }
 
 int ProgramLoggerRead(const program_log_entry_t *entry, void *data, size_t len) {
-    int rc;
-    size_t read_len = len;
-    const struct fcb_entry_ctx *ctx = (const struct fcb_entry_ctx *)entry;
-    if (ctx == NULL || data == NULL) {
+    if (!entry || !data) {
         return -EINVAL;
     }
-    if (read_len > ctx->loc.fe_data_len) {
-        read_len = ctx->loc.fe_data_len;
-    }
-    rc = flash_area_read(ctx->fap, FCB_ENTRY_FA_DATA_OFF(ctx->loc), data, len);
-    if (rc) {
-        LOG_ERR("Failed to read data from FCB (%d)", rc);
+    const callback_ctx_t *ctx = (const callback_ctx_t *)entry;
+    size_t read_len = MIN(len, ctx->data_length);
+    off_t data_offset = ctx->offset + sizeof(struct log_entry_header);
+
+    int rc = flash_area_read(ctx->fap, data_offset, data, read_len);
+    if (rc != 0) {
+        LOG_ERR("Failed to read log entry");
         return rc;
     }
+
     return read_len;
 }
 
 int ProgramLoggerEmit(program_entry_lookup_cb_t cb, void *arg) {
-    int rc = 0;
-    int count = 0;
-    struct fcb_entry_ctx entry;
-
-    (void)memset(&entry, 0, sizeof(entry));
-    entry.fap = _fcb.fap;
-    while (!fcb_getnext(&_fcb, &entry.loc) && rc == 0) {
-        if (cb != NULL) {
-            rc = cb((program_log_entry_t *)&entry, arg);
+    int emitted = 0;
+    struct circular_log *clog = &_clog;
+    for (int i = 0; i < clog->max_entries; i++) {
+        int index = (clog->head + i) % clog->max_entries;
+        off_t offset = clog->aligned_entry_size * index;
+        struct log_entry_header hdr;
+        // Read header and check header for magic number
+        if (flash_area_read(clog->fap, offset, &hdr, sizeof(hdr)) != 0 || hdr.magic != LOG_MAGIC) {
+            continue;
         }
-        count++;
+
+        callback_ctx_t ctx = {.fap = clog->fap, .offset = offset, .data_length = hdr.length};
+
+        if (cb && cb((program_log_entry_t *)&ctx, arg) != 0) {
+            break;
+        }
+
+        emitted++;
     }
-    return count;
+
+    return emitted;
 }
 
-int ProgramLoggerInit(void) {
-    int rc;
+int ProgramLoggerInit(size_t entry_size) {
+    struct circular_log *clog = &_clog;
+    struct flash_sector flash_sector;
+    size_t entry_size_with_hdr = entry_size + sizeof(struct log_entry_header);
     uint32_t cnt;
-    const struct flash_area *fap;
-    static struct flash_sector flash_sectors[SECTORS_TO_USE];
 
-    cnt = sizeof(flash_sectors) / sizeof(flash_sectors[0]);
-    rc = flash_area_get_sectors(LOGGER_PARTITION, &cnt, flash_sectors);
-    if (rc != 0 && rc != -ENOMEM) {
-        LOG_ERR("Failed to get sectors for logger partition (%d)", rc);
+    int rc = flash_area_open(LOGGER_PARTITION, &clog->fap);
+    if (rc) {
+        LOG_ERR("Failed to open flash area");
         return rc;
     }
 
-    _fcb.f_magic = 0xAFFECAFE;
-    _fcb.f_version = 1;      /*  Current version number of the data */
-    _fcb.f_sector_cnt = cnt; /* Number of elements in sector array */
-    _fcb.f_scratch_cnt = 1;
-    _fcb.f_sectors = flash_sectors; /* Pointer to array of sectors */
-
-    rc = fcb_init(LOGGER_PARTITION, &_fcb);
-
-    /* If found trash, wipe partition */
-    if (rc == -ENOMSG) {
-        rc = flash_area_open(LOGGER_PARTITION, &fap);
-        if (rc != 0) {
-            return rc;
-        }
-
-        rc = flash_area_flatten(fap, 0, fap->fa_size);
-        flash_area_close(fap);
-
-        if (rc != 0) {
-            return rc;
-        }
-        LOG_INF("Found garbage, logger partition cleared (%d)", rc);
-        /* Try init again */
-        rc = fcb_init(LOGGER_PARTITION, &_fcb);
+    // Get information of the first sector and assume all sectors are the same size
+    cnt = 1;
+    rc = flash_area_get_sectors(LOGGER_PARTITION, &cnt, &flash_sector);
+    if (rc != 0 && rc != -ENOMEM) {
+        LOG_ERR("Failed to get sector for logger partition (%d)", rc);
+        return rc;
     }
-    return rc;
+
+    if (entry_size_with_hdr > flash_sector.fs_size) {
+        // Align up to sector size
+        clog->aligned_entry_size = ROUND_UP(entry_size_with_hdr, flash_sector.fs_size);
+    } else {
+        clog->aligned_entry_size = ROUND_UP(entry_size_with_hdr, 4);  // ensure alignment
+    }
+
+    clog->max_entries = clog->fap->fa_size / clog->aligned_entry_size;
+
+    return scan_entries(clog);
 }
