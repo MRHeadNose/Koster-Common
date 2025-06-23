@@ -5,7 +5,6 @@ menuconfig KOSTER_COMMON
     depends on FLASH
     depends on FLASH_MAP
     depends on NVS
-    depends on FCB
     depends on SETTINGS
     depends on SETTINGS_RUNTIME
 endmenu
