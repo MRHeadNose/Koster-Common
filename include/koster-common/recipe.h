@@ -25,6 +25,16 @@ typedef enum {
 // Ordered recipe type string for use in LVGL rollers
 #define RECIPE_TYPES_STRING "Select type\nIR\nIR & UV\n3 Step IR\nUV\nUV LED"
 
+struct program_step {
+    uint16_t time;         // Time in seconds to hold power or temperature
+    uint16_t uv_time;      // UV time in seconds, 0 if unused
+    uint16_t target_temp;  // Target for ramping or holding temperature, 0 means fixed power is used
+    union {
+        uint8_t power;      // Power level in percent when using fixed power
+        uint8_t temp_rise;  // Temperature rise in 0.1C per minute used for ramping
+    };
+};
+
 struct recipe_t;
 
 /**
@@ -221,6 +231,16 @@ uint16_t RecipeGetPyroOnTemp(const struct recipe_t *recipe, uint8_t timer_number
  * @return the time in seconds
  */
 uint16_t RecipeGetUVTime(const struct recipe_t *recipe);
+
+/**
+ * Get a program step for running the recipe
+ *
+ * @param recipe pointer to the recipe
+ * @param index  index of the step to retrieve
+ * @param step   pointer to a program_step struct to fill
+ * @return -1 on failure, 0 on success
+ */
+int RecipeGetRunStep(const struct recipe_t *recipe, uint8_t index, struct program_step *step);
 
 void RecipePrintAll();
 
