@@ -89,7 +89,7 @@ struct kzbus_distance_msg_t {
     uint8_t vinga_id;
 };
 
-typedef enum { kRunnerErrorA, kRunnerErrorB } runner_error_t;
+typedef enum { kRunnerErrorNone, kRunnerErrorA, kRunnerErrorB } runner_error_t;
 
 /**
  * Sent from the Runner. Sent on channel kzbus_error_chan.
