@@ -348,6 +348,30 @@ uint16_t RecipeGetPyroOnTemp(const struct recipe_t *recipe, const uint8_t timer_
     return ret_val;
 }
 
+int RecipeGetRunStep(const struct recipe_t *recipe, uint8_t index, struct program_step *step) {
+    if (recipe == NULL || step == NULL || index >= RECIPE_MAX_PYRO_ON_TIMERS) {
+        return -EINVAL;
+    }
+
+    step->uv_time = recipe->uv_time;
+    // If this is a fixed power step
+    if (index < RECIPE_MAX_PYRO_OFF_TIMERS && recipe->pyro_off_time[index] > 0) {
+        step->time = recipe->pyro_off_time[index];
+        step->target_temp = 0;  // No target temperature for fixed power steps
+        step->power = recipe->pyro_off_power[index];
+        return 0;
+    }
+    // Check if this is a regulated temperature step
+    step->time = recipe->pyro_on_time[index];
+    step->target_temp = recipe->pyro_on_temp[index];
+    step->temp_rise = recipe->pyro_on_rise[index];
+    if (step->time != 0 || step->target_temp != 0 || step->temp_rise != 0) {
+        return 0;
+    }
+    // No such step
+    return -ENOENT;
+}
+
 uint16_t RecipeGetUVTime(const struct recipe_t *recipe) {
     uint16_t ret_val = 0;
     if (k_mutex_lock(&recipes_mutex, K_FOREVER) == 0) {
