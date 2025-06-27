@@ -238,7 +238,7 @@ uint16_t RecipeGetUVTime(const struct recipe_t *recipe);
  * @param recipe pointer to the recipe
  * @param index  index of the step to retrieve
  * @param step   pointer to a program_step struct to fill
- * @return -1 on failure, 0 on success
+ * @return negative error code (errno.h) on failure, 0 on success
  */
 int RecipeGetRunStep(const struct recipe_t *recipe, uint8_t index, struct program_step *step);
 
