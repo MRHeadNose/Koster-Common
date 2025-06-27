@@ -31,7 +31,7 @@ struct program_step {
     uint16_t target_temp;  // Target for ramping or holding temperature, 0 means fixed power is used
     union {
         uint8_t power;      // Power level in percent when using fixed power
-        uint8_t temp_rise;  // Temperature rise in 0.1C per minute used for ramping
+        uint8_t temp_rise;  // Temperature rise in Celsius per minute used for ramping
     };
 };
 
