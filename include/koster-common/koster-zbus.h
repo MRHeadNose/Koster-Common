@@ -57,8 +57,8 @@ struct kzbus_program_msg_t {
     uint16_t step_time_left;
     /** the current uv/ir power output in percent */
     uint8_t power;
-    /** total accumulated energy so far over the run of the program, in kWh */
-    float total_energy;
+    /** total accumulated energy so far over the run of the program, in Ws */
+    double total_energy;
     /** bitmap representing which cassettes are in use */
     uint8_t cassettes;
     /** true if fans are on, false if not */

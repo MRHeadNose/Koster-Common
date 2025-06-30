@@ -5,7 +5,6 @@
 
 #define PROGRAM_HISTORY_GRAPH_MAX_PTS_V1 1200
 #define PROGRAM_HISTORY_TYPE_LEN_V1 10
-#define PROGRAM_HISTORY_TERMINATION_LEN_V1 10
 #define PROGRAM_HISTORY_PYRO_ON_TIMERS_V1 2
 #define PROGRAM_HISTORY_PYRO_OFF_TIMERS_V1 3
 #define PROGRAM_HISTORY_IMG_DATA_SIZE_V1 32 * 24
@@ -14,8 +13,16 @@
 #define PROGRAM_HISTORY_RECIPE_NAME_LEN_V1 128
 #define PROGRAM_HISTORY_USER_ID_LEN_V1 64
 
+typedef enum {
+    kProgramRecipeIR = 0,
+    kProgramRecipeUV = 1,
+    kProgramRecipeIRUV = 2,
+    kProgramRecipe3StepIR = 3,
+    kProgramRecipeUVLED = 4,
+} program_recipe_type_t;
+
 struct program_recipe_v1_t {
-    char type[PROGRAM_HISTORY_TYPE_LEN_V1];                     // "IR", "UV", "IRUV", "3 Step IR", "UV LED"
+    program_recipe_type_t type;
     uint16_t pyro_off_time[PROGRAM_HISTORY_PYRO_ON_TIMERS_V1];  // pyro-off time (seconds)
     uint8_t pyro_off_power[PROGRAM_HISTORY_PYRO_ON_TIMERS_V1];  // pyro-off power (percent)
     uint16_t pyro_on_time[PROGRAM_HISTORY_PYRO_OFF_TIMERS_V1];  // pyro-on time (seconds)
@@ -38,11 +45,18 @@ struct program_header_v1_t {
     char recipe_name[PROGRAM_HISTORY_RECIPE_NAME_LEN_V1];
 };
 
+typedef enum {
+    kTerminationUnknown = 0,
+    kTerminationFinished = 1,
+    kTerminationUser = 2,
+    kTerminationAlarm = 3
+} program_termination_t;
+
 struct program_data_v1_t {
-    uint32_t energy_wh;                                    // Energy in Watt hours
-    uint8_t cassettes;                                     // Bitmap off enabled cassettes (1 = enabled, 0 = disabled)
-    uint8_t temperature_control_on;                        // 0 = off, otherwise on
-    char termination[PROGRAM_HISTORY_TERMINATION_LEN_V1];  // "Unknown", "Finished", "User", "Alarm"
+    uint32_t energy;                 // Energy in Watt-seconds
+    uint8_t cassettes;               // Bitmap off enabled cassettes (1 = enabled, 0 = disabled)
+    uint8_t temperature_control_on;  // 0 = off, otherwise on
+    program_termination_t termination;
     char user_id[PROGRAM_HISTORY_USER_ID_LEN_V1];
     struct program_recipe_v1_t recipe;
     struct program_graphs_v1_t graphs;
