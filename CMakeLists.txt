@@ -26,6 +26,7 @@ zephyr_library_sources(
   ${CMAKE_CURRENT_LIST_DIR}/src/program_logger.c
   ${CMAKE_CURRENT_LIST_DIR}/src/recipe.c
   ${CMAKE_CURRENT_LIST_DIR}/src/default_recipes.c
+  ${CMAKE_CURRENT_LIST_DIR}/src/alarm.c
   ${CMAKE_CURRENT_BINARY_DIR}/generated/parameters.c
   ${CMAKE_CURRENT_BINARY_DIR}/generated/default_recipes_generated.c
   )

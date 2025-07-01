@@ -31,23 +31,23 @@ ZBUS_CHAN_DEFINE(kzbus_distance_chan, /* Name */
                  ZBUS_MSG_INIT(0));
 
 /**
- * Channel for error messages (from program runner)
+ * Channel for alarm messages (from program runner)
  */
-ZBUS_CHAN_DEFINE(kzbus_error_chan,              /* Name */
-                 struct kzbus_msg_t,            /* Message type */
-                 NULL,                          /* Validator */
-                 NULL,                          /* User data */
-                 ZBUS_OBSERVERS(),              /* Observers */
+ZBUS_CHAN_DEFINE(kzbus_alarm_chan,   /* Name */
+                 struct kzbus_msg_t, /* Message type */
+                 NULL,               /* Validator */
+                 NULL,               /* User data */
+                 ZBUS_OBSERVERS(),   /* Observers */
                  ZBUS_MSG_INIT(0));
 
 /**
  * Channel for IR camera image buffer (from program runner)
  */
-ZBUS_CHAN_DEFINE(kzbus_ircam_chan,              /* Name */
-                 struct kzbus_msg_t,            /* Message type */
-                 NULL,                          /* Validator */
-                 NULL,                          /* User data */
-                 ZBUS_OBSERVERS(),              /* Observers */
+ZBUS_CHAN_DEFINE(kzbus_ircam_chan,   /* Name */
+                 struct kzbus_msg_t, /* Message type */
+                 NULL,               /* Validator */
+                 NULL,               /* User data */
+                 ZBUS_OBSERVERS(),   /* Observers */
                  ZBUS_MSG_INIT(0));
 
 /**
