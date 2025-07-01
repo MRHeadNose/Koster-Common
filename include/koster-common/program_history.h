@@ -63,7 +63,7 @@ struct program_data_v1_t {
     int16_t img[PROGRAM_HISTORY_IMG_DATA_SIZE_V1];
     uint8_t param_ids[PROGRAM_HISTORY_MAX_PARAMS_V1];
     int32_t param_vals[PROGRAM_HISTORY_MAX_PARAMS_V1];
-    uint8_t alarm_ids[PROGRAM_HISTORY_MAX_ALARMS_V1];
+    uint16_t alarm_ids[PROGRAM_HISTORY_MAX_ALARMS_V1];
 };
 
 struct program_header_t {
