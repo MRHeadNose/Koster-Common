@@ -79,4 +79,14 @@ typedef int (*alarm_walk_cb_t)(const struct alarm_t alarm, void *arg);
  */
 int AlarmWalk(alarm_walk_cb_t cb, void *arg);
 
+/**
+ * @brief Test if an alarm is active
+ *
+ * @param[in] error_id  The error ID to test for
+ * @param[out] origin   Pointer to origin the will be set
+
+ * @return true if the error is active, false if not.
+ */
+bool AlarmIsActive(const uint8_t error_id, alarm_origin_t *origin);
+
 #endif
