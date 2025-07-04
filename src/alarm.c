@@ -6,6 +6,7 @@
 #include <zephyr/zbus/zbus.h>
 
 #include "koster-common/koster-zbus.h"
+#include "koster-common/rtc.h"
 
 LOG_MODULE_DECLARE(koster_common);
 
@@ -70,8 +71,8 @@ int AlarmSet(const bool active, const uint8_t error_id, const alarm_origin_t ori
     int rc = -1;
     uint32_t first_free_index = UINT32_MAX;
     bool notify = false;
-#warning "TODO: Use RTC"
-    const uint32_t epoch = k_uptime_seconds();
+
+    const uint32_t epoch = RtcGetEpoch();
 
     if (k_mutex_lock(&alarm_mutex_, K_FOREVER) == 0) {
         for (int i = 0; i < ALARM_MAX_ALARMS; ++i) {
