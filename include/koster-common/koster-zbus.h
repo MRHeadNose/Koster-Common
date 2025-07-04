@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <zephyr/zbus/zbus.h>
 
+#include "koster-common/alarm.h"
+
 #define ZBUS_SENDER_NAME_MAX_LEN 16
 
 /**
@@ -89,16 +91,12 @@ struct kzbus_distance_msg_t {
     uint8_t vinga_id;
 };
 
-typedef enum { kRunnerErrorA, kRunnerErrorB } runner_error_t;
-
 /**
- * Sent from the Runner. Sent on channel kzbus_error_chan.
+ * Sent from the Runner. Sent on channel kzbus_alarm_chan.
  */
-struct kzbus_error_msg_t {
-    runner_error_t error_type;
-    uint8_t error_id;
-    /** the ID of the Vinga node the error originated from  */
-    uint8_t vinga_id;
+struct kzbus_alarm_msg_t {
+    bool alarm_active;
+    uint16_t alarm_id;
 };
 
 /**
@@ -124,7 +122,7 @@ typedef enum {
     kMsgTemperature,
     kMsgDistance,
     kMsgIRCamera,
-    kMsgError
+    kMsgAlarm
 } kzbus_msg_type_t;
 
 /**
@@ -145,7 +143,7 @@ struct kzbus_msg_t {
         struct kzbus_program_msg_t program_msg;
         struct kzbus_temperature_msg_t temperature_msg;
         struct kzbus_distance_msg_t distance_msg;
-        struct kzbus_error_msg_t error_msg;
+        struct kzbus_alarm_msg_t alarm_msg;
         struct kzbus_ircam_msg_t ircam_msg;
     };
 };
@@ -159,7 +157,7 @@ struct kzbus_msg_t {
 ZBUS_CHAN_DECLARE(kzbus_program_chan,      // Channel for program state messages (from program runner)
                   kzbus_temperature_chan,  // Channel for temperature messages (from program runner)
                   kzbus_distance_chan,     // Channel for distance messages (from program runner)
-                  kzbus_error_chan,        // Channel for error messages (from program runner)
+                  kzbus_alarm_chan,        // Channel for alarm messages (from program runner)
                   kzbus_control_chan,      // Channel for control messages (to program runner)
                   kzbus_ircam_chan         // Channel for IR camera (from program runner)
 );
