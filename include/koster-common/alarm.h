@@ -15,8 +15,6 @@ typedef enum {
     kAlarmOriginVinga3 = 0x2200,
     kAlarmOriginVinga4 = 0x2300,
     kAlarmOriginVinga5 = 0x2400,
-    kAlarmOriginTest1 = 0xF000,
-    kAlarmOriginTest2 = 0xF100,
 } alarm_origin_t;
 
 struct alarm_t {

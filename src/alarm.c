@@ -14,13 +14,11 @@ LOG_MODULE_DECLARE(koster_common);
 struct k_mutex alarm_mutex_;
 static uint16_t active_alarms_[ALARM_MAX_ALARMS];
 static uint32_t active_alarm_times_[ALARM_MAX_ALARMS];
-static int number_of_active_alarms_;
 
 extern const struct zbus_channel kzbus_alarm_chan;
 
 void AlarmInit() {
     k_mutex_init(&alarm_mutex_);
-    number_of_active_alarms_ = 0;
     memset(active_alarms_, 0, sizeof(active_alarms_));
     memset(active_alarm_times_, 0, sizeof(active_alarm_times_));
 }
@@ -40,7 +38,6 @@ char AlarmGetType(uint16_t alarm_id) {
         case 0x1012:
         case 0x1013:
         case 0x1014:
-        case 0xF001:
             return 'A';
         case 0x1001:
         case 0x1004:
@@ -52,7 +49,6 @@ char AlarmGetType(uint16_t alarm_id) {
         case 0x1015:
         case 0x1016:
         case 0x1017:
-        case 0xF102:
             return 'B';
         default:
             return 'U';
@@ -88,7 +84,6 @@ int AlarmSet(const bool active, const uint8_t error_id, const alarm_origin_t ori
                     LOG_INF("[alarm] Clearing alarm ID 0x%X", alarm_id);
                     active_alarms_[i] = 0;
                     active_alarm_times_[i] = 0;
-                    number_of_active_alarms_--;
                     notify = true;
                     rc = 0;
                     break;
@@ -98,7 +93,6 @@ int AlarmSet(const bool active, const uint8_t error_id, const alarm_origin_t ori
 
         if (first_free_index < ALARM_MAX_ALARMS && active) {
             LOG_ERR("[alarm] Setting alarm ID 0x%X", alarm_id);
-            number_of_active_alarms_++;
             active_alarms_[first_free_index] = alarm_id;
             active_alarm_times_[first_free_index] = epoch;
             notify = true;
