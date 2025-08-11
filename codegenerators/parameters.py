@@ -423,7 +423,7 @@ class Configuration:
 
             
             type = self.parameters[id]["Type"]
-            if type in ["uint8_t", "uint16_t", "int8_t", "int16_t", "int32_t", "uint32_t"]:
+            if type in ["uint8_t", "uint16_t", "int8_t", "int16_t", "int32_t"]:
                 try:
                     minimum = self.parameters[id]["Min"]
                     int(minimum)
