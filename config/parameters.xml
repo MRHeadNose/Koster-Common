@@ -104,8 +104,8 @@
   <Parameter Id="75" Category="Time" Name="Hour" Type="uint8_t" AccessLevel="Advanced" Description="Hour (24h, UTC)" Default="13" Min="0" Max="23" Exponent="0" />
   <Parameter Id="76" Category="Time" Name="Minute" Type="uint8_t" AccessLevel="Advanced" Description="Minute (UTC)" Default="37" Min="0" Max="59" Exponent="0" />
   <Parameter Id="77" Category="Time" Name="Second" Type="uint8_t" AccessLevel="Advanced" Description="Second (UTC)" Default="0" Min="0" Max="59" Exponent="0" />
-  <Parameter Id="78" Category="Time" Name="Time Zone Hours" Type="int32_t" AccessLevel="Advanced" Description="Time zone offset from UTC, hours" Default="0" Min="-12" Max="12" Exponent="0" />
-  <Parameter Id="79" Category="Time" Name="Time Zone Minutes" Type="int32_t" AccessLevel="Advanced" Description="Time zone offset from UTC, minutes" Default="0" Min="-59" Max="59" Exponent="0" />
+  <Parameter Id="78" Category="Time" Name="Time Zone Hours" Type="int8_t" AccessLevel="Advanced" Description="Time zone offset from UTC, hours" Default="0" Min="-12" Max="12" Exponent="0" />
+  <Parameter Id="79" Category="Time" Name="Time Zone Minutes" Type="int8_t" AccessLevel="Advanced" Description="Time zone offset from UTC, minutes" Default="0" Min="-59" Max="59" Exponent="0" />
   
   <!-- <Parameter ID="0" Category="" Name="" Type="" Min="" Max="" Unit="" Exponent="0" AccessLevel="" Description="" /> -->
   

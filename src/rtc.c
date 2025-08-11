@@ -50,8 +50,8 @@ int RtcToParameters() {
 }
 
 uint32_t RtcGetEpoch() {
-    struct rtc_time time;
-    int rc = rtc_get_time(rtc, &time);
+    struct rtc_time rtc_time;
+    int rc = rtc_get_time(rtc, &rtc_time);
 
     if (rc == -ENODATA) {
         LOG_WRN_ONCE("[Rtc] No RTC data. Setting RTC from parameters.");
@@ -64,9 +64,10 @@ uint32_t RtcGetEpoch() {
         LOG_WRN_ONCE("[Rtc] Failed to get time: rc = %i", rc);
         return 0;
     }
-    struct tm* tm_time = rtc_time_to_tm(&time);
-    if (tm_time != NULL) {
-        return timeutil_timegm(tm_time);
+
+    struct tm* utc_time = rtc_time_to_tm(&rtc_time);
+    if (utc_time != NULL) {
+        return mktime(utc_time);
     }
 
     return 0;

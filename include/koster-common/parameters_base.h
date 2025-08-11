@@ -82,7 +82,7 @@ int ParamDecreaseValue(const struct param_t* param);
  * @param param  pointer to the parameter
  * @param value  the value to set
  */
-int ParamSetValue(const struct param_t* param, const uint32_t value);
+int ParamSetValue(const struct param_t* param, const int32_t value);
 
 /**
  * Check if parameter is an enum
