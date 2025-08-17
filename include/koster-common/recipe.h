@@ -232,15 +232,6 @@ uint16_t RecipeGetPyroOnTemp(const struct recipe_t *recipe, uint8_t timer_number
  */
 uint16_t RecipeGetUVTime(const struct recipe_t *recipe);
 
-/**
- * Get a program step for running the recipe
- *
- * @param recipe pointer to the recipe
- * @param index  index of the step to retrieve
- * @param step   pointer to a program_step struct to fill
- * @return negative error code (errno.h) on failure, 0 on success
- */
-int RecipeGetRunStep(const struct recipe_t *recipe, uint8_t index, struct program_step *step);
 
 void RecipePrintAll();
 
