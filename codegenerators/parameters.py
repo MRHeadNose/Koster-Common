@@ -304,6 +304,7 @@ param_default_override = """
 """
 param_value_setter = "            param_values_[{index}] = {value};"
 
+
 class Configuration:
     """
     Parser for parameters configuration
@@ -415,29 +416,36 @@ class Configuration:
                     error_txt = f'Attribute Exponent ("{exponent}") must be an integer (Parameter with Id "{id}")'
                     raise RuntimeError(error_txt)
                 
-            elif any([attrib in self.parameters[id] for attrib in ["Min", "Max", "Exponent"]]):
-                error_txt = f'Parameter with Id "{id}" must have all or none of attributes "Min", "Max", "Exponent", "Unit"'
-                raise RuntimeError(error_txt)
+            if any([attrib in self.parameters[id] for attrib in ["Min", "Max", "Exponent"]]):
+                if not all([attrib in self.parameters[id] for attrib in ["Min", "Max", "Exponent"]]):
+                    error_txt = f'Parameter with Id "{id}" must have all or none of attributes "Min", "Max", "Exponent"'
+                    raise RuntimeError(error_txt)
 
             
             type = self.parameters[id]["Type"]
             if type in ["uint8_t", "uint16_t", "int8_t", "int16_t", "int32_t"]:
-                minimum = self.parameters[id]["Min"]
                 try:
+                    minimum = self.parameters[id]["Min"]
                     int(minimum)
                 except ValueError:
                     error_txt = f'Attribute Min ("{minimum}") must be an integer for Type "{type}" (Parameter with Id "{id}")'
                     raise RuntimeError(error_txt)
+                except KeyError:
+                    error_txt = f'Missing Attribute Min for Parameter with Id "{id}"'
+                    raise RuntimeError(error_txt)
 
-                maximum = self.parameters[id]["Max"]
                 try:
+                    maximum = self.parameters[id]["Max"]
                     int(maximum)
                 except ValueError:
                     error_txt = f'Attribute Max ("{maximum}") must be an integer for Type "{type}" (Parameter with Id "{id}")'
                     raise RuntimeError(error_txt)
+                except KeyError:
+                    error_txt = f'Missing Attribute Max for Parameter with Id "{id}"'
+                    raise RuntimeError(error_txt)
 
                 if int(maximum) <= int(minimum):
-                    error_txt = f'Attribute Max ("{maximum}") must be larger than Min ("{minimum}") (Parameter with Id "{id}")'
+                    error_txt = f'Attribute Max ("{maximum}") is smaller than Min ("{minimum}") (Parameter with Id "{id}")'
                     raise RuntimeError(error_txt)
 
             elif type not in self.enums.keys():

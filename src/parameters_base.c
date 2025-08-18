@@ -109,7 +109,7 @@ int ParamDecreaseValue(const struct param_t* param) {
     return rc;
 }
 
-int ParamSetValue(const struct param_t* param, const uint32_t value) {
+int ParamSetValue(const struct param_t* param, const int32_t value) {
     int rc = -1;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
         if (param != NULL && value >= param->min && value <= param->max) {

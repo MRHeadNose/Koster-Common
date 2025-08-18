@@ -13,6 +13,8 @@
     <Category Id="3" Name="Radar" />
     <Category Id="4" Name="Misc." />
     <Category Id="5" Name="UI" />
+    <Category Id="6" Name="Date" />
+    <Category Id="7" Name="Time" />
   </Categories>
   
   <Enums>
@@ -67,6 +69,15 @@
       <EnumValue Name="Viridis" Value="1" />
       <EnumValue Name="Inferno" Value="2" />
     </Enum>
+    <Enum Name="weekday_t">
+      <EnumValue Name="Monday" Value="0" />
+      <EnumValue Name="Tuesday" Value="1" />
+      <EnumValue Name="Wednesday" Value="2" />
+      <EnumValue Name="Thursday" Value="3" />
+      <EnumValue Name="Friday" Value="4" />
+      <EnumValue Name="Saturday" Value="5" />
+      <EnumValue Name="Sunday" Value="6" />
+    </Enum>
   </Enums>
 
   <Units>
@@ -85,6 +96,16 @@
   <Parameter Id="11" Category="Misc." Name="Cass. T. Guard" Type="yes_no_t" AccessLevel="Factory" Description="" Default="Yes" />
   <Parameter Id="12" Category="Misc." Name="Cassettes" Type="uint8_t" Min="1" Max="4" Exponent="0" Unit="pc." AccessLevel="Factory" Description="" Default="3" />
   <Parameter Id="70" Category="UI" Name="Heat camera colormap" Type="color_map_t" AccessLevel="Basic" Description="" Default="Turbo" />
+
+  <Parameter Id="71" Category="Date" Name="Year" Type="uint16_t" AccessLevel="Advanced" Description="Year (UTC)" Default="2025" Min="2025" Max="2200" Exponent="0" />
+  <Parameter Id="72" Category="Date" Name="Month" Type="uint8_t" AccessLevel="Advanced" Description="Month (UTC)" Default="7" Min="1" Max="12" Exponent="0" />
+  <Parameter Id="73" Category="Date" Name="Day" Type="uint8_t" AccessLevel="Advanced" Description="Day (UTC)" Default="4" Min="1" Max="31" Exponent="0" />
+  <Parameter Id="74" Category="Date" Name="Weekday" Type="weekday_t" AccessLevel="Advanced" Description="Weekday" Default="Monday" />
+  <Parameter Id="75" Category="Time" Name="Hour" Type="uint8_t" AccessLevel="Advanced" Description="Hour (24h, UTC)" Default="13" Min="0" Max="23" Exponent="0" />
+  <Parameter Id="76" Category="Time" Name="Minute" Type="uint8_t" AccessLevel="Advanced" Description="Minute (UTC)" Default="37" Min="0" Max="59" Exponent="0" />
+  <Parameter Id="77" Category="Time" Name="Second" Type="uint8_t" AccessLevel="Advanced" Description="Second (UTC)" Default="0" Min="0" Max="59" Exponent="0" />
+  <Parameter Id="78" Category="Time" Name="Time Zone Hours" Type="int8_t" AccessLevel="Advanced" Description="Time zone offset from UTC, hours" Default="0" Min="-12" Max="12" Exponent="0" />
+  <Parameter Id="79" Category="Time" Name="Time Zone Minutes" Type="int8_t" AccessLevel="Advanced" Description="Time zone offset from UTC, minutes" Default="0" Min="-59" Max="59" Exponent="0" />
   
   <!-- <Parameter ID="0" Category="" Name="" Type="" Min="" Max="" Unit="" Exponent="0" AccessLevel="" Description="" /> -->
   
