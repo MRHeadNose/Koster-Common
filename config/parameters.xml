@@ -15,6 +15,7 @@
     <Category Id="5" Name="UI" />
     <Category Id="6" Name="Date" />
     <Category Id="7" Name="Time" />
+    <Category Id="8" Name="Access" />
   </Categories>
   
   <Enums>
@@ -94,8 +95,8 @@
   <Parameter Id="37" Category="Language and units" Name="Distance unit" Type="distance_unit_t" AccessLevel="Advanced" Description="Distance is displayed in this unit" Default="Centimeters" />
   <Parameter Id="61" Category="Radar" Name="Radar Distance" Type="uint16_t" Min="2" Max="14" Exponent="-1" Unit="Meter" AccessLevel="Factory" Description="" Default="10" />
   <Parameter Id="11" Category="Misc." Name="Cass. T. Guard" Type="yes_no_t" AccessLevel="Factory" Description="" Default="Yes" />
-  <Parameter Id="12" Category="Misc." Name="Cassettes" Type="uint8_t" Min="1" Max="4" Exponent="0" Unit="pc." AccessLevel="Factory" Description="" Default="3" />
-  <Parameter Id="70" Category="UI" Name="Heat camera colormap" Type="color_map_t" AccessLevel="Basic" Description="" Default="Turbo" />
+  <Parameter Id="12" Category="Misc." Name="Cassettes" Type="uint8_t" Min="1" Max="4" Exponent="0" Unit="pc." AccessLevel="Factory" Description="" Default="2" />
+  <Parameter Id="70" Category="UI" Name="Camera colormap" Type="color_map_t" AccessLevel="Basic" Description="" Default="Turbo" />
 
   <Parameter Id="71" Category="Date" Name="Year" Type="uint16_t" AccessLevel="Advanced" Description="Year (UTC)" Default="2025" Min="2025" Max="2200" Exponent="0" />
   <Parameter Id="72" Category="Date" Name="Month" Type="uint8_t" AccessLevel="Advanced" Description="Month (UTC)" Default="7" Min="1" Max="12" Exponent="0" />
@@ -106,6 +107,11 @@
   <Parameter Id="77" Category="Time" Name="Second" Type="uint8_t" AccessLevel="Advanced" Description="Second (UTC)" Default="0" Min="0" Max="59" Exponent="0" />
   <Parameter Id="78" Category="Time" Name="Time Zone Hours" Type="int8_t" AccessLevel="Advanced" Description="Time zone offset from UTC, hours" Default="0" Min="-12" Max="12" Exponent="0" />
   <Parameter Id="79" Category="Time" Name="Time Zone Minutes" Type="int8_t" AccessLevel="Advanced" Description="Time zone offset from UTC, minutes" Default="0" Min="-59" Max="59" Exponent="0" />
+  <!-- Pin codes. Leading zeros are ignored on input, e.g. 0013 == 13, and 0000 == 0 -->
+  <Parameter Id="7" Category="Access" Name="Basic Pin" Type="uint16_t" AccessLevel="Advanced" Description="Pin code for Basic access" Default="0" Min="0" Max="9999" Exponent="0" />
+  <Parameter Id="36" Category="Access" Name="Advanced Pin" Type="uint16_t" AccessLevel="Advanced" Description="Pin code for Advanced access" Default="1523" Min="0" Max="9999" Exponent="0" />
+  <Parameter Id="35" Category="Access" Name="Factory Pin" Type="uint16_t" AccessLevel="Factory" Description="Pin code for Factory access" Default="5780" Min="0" Max="9999" Exponent="0" />
+  
   
   <!-- <Parameter ID="0" Category="" Name="" Type="" Min="" Max="" Unit="" Exponent="0" AccessLevel="" Description="" /> -->
   

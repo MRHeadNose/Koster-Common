@@ -29,6 +29,7 @@ struct param_category_t;
 #define PARAM_NAME_MAX_LEN {param_name_max_len}
 #define PARAM_DESC_MAX_LEN {param_desc_max_len}
 #define PARAM_VALUE_STRING_MAX_LEN {param_value_string_max_len}
+#define PARAM_ACCESS_LEVELS {n_access_levels}
 
 {getter_declarations}
 
@@ -261,7 +262,7 @@ param_name = 'static const char kParamName_{name}[] = "{display_name}";';
 param_description = 'static const char kParamDescription_{name}[] = "{description}";';
 category_name = 'static const char kCategoryName_{name}[] = "{display_name}";';
 
-category_initializer = "    {{{id}, kCategoryName_{name}, {n_params_in_category}, {{{category_parameter_ptrs}}}}},"
+category_initializer = "    {{{id}, kCategoryName_{name}, {{{n_params_in_category_per_access_level}}}, {{{category_parameter_ptrs}}}}},"
 category_parameter_ptr = "&params_[{parameter_ptr}]"
 
 handle_set_case = """
@@ -573,15 +574,18 @@ class SourceGenerator:
                                     if self.config.parameters[key]["Category"] == name ]
             sorted_filtered_parameters = sorted(filtered_parameters, key=lambda d: d["Name"])
             sorted_filtered_parameters_indices = [ id_to_index[p["Id"]] for p in sorted_filtered_parameters ]
-            n_params = len(sorted_filtered_parameters_indices)
+            n_params_per_access_level = [ len([ param for param in filtered_parameters
+                                                if int(self.config.access_levels[param["AccessLevel"]]) <= int(access)])
+                                          for access in sorted(self.config.access_levels.values()) 
+                                         ]
             category_initializers.append(category_initializer.format(
                 id=self.config.categories[name],
                 index=i,
                 name=to_camelcase(name),
-                n_params_in_category=n_params,
+                n_params_in_category_per_access_level=", ".join(f"{n}" for n in n_params_per_access_level),
                 category_parameter_ptrs=", ".join([category_parameter_ptr.format(parameter_ptr=p) for p in sorted_filtered_parameters_indices])
             ))
-            n_params_in_category.append(n_params)
+            n_params_in_category.append(n_params_per_access_level[-1]) # last element is the highest access level which has access to all parameters
             category_names.append(category_name.format(name=to_camelcase(name), display_name=name))
 
         param_default_overrides = []
@@ -598,6 +602,7 @@ class SourceGenerator:
             )
         
         header_content = header.format(
+            n_access_levels=len(self.config.access_levels),
             enums='\n'.join(enums),
             getter_declarations="\n".join(getter_declarations),
             setter_declarations="\n".join(setter_declarations),
