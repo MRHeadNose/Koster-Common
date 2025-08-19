@@ -178,14 +178,6 @@ int ParamGetValueString(const struct param_t* param, char* buf, const int32_t va
 int ParamGetExponent(const struct param_t* param);
 
 /**
- * Get parameter access level
- *
- * @return the access level
- * @param param  pointer to the parameter
- */
-int ParamGetAccess(const struct param_t* param);
-
-/**
  * Save a parameter to persistent storage
  *
  * @return 0 on success, -1 on failure

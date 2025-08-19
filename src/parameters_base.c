@@ -133,17 +133,11 @@ bool ParamIsEnum(const struct param_t* param) {
 }
 
 int ParamCategoryGetNParams(const struct param_category_t* category, const unsigned int access_level) {
-    if (access_level >= PARAM_ACCESS_LEVELS) {
+    if (access_level >= PARAM_ACCESS_LEVELS || category == NULL) {
         return -EINVAL;
     }
-    int ret_val = -ENOENT;
-    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
-        if (category != NULL) {
-            ret_val = category->n_params[access_level];
-        }
-        k_mutex_unlock(&param_mutex);
-    }
-    return ret_val;
+
+    return category->n_params[access_level];
 }
 
 int ParamCategoryGetTotalNParams(const struct param_category_t* category) {
@@ -185,17 +179,6 @@ int ParamGetCategoryName(const struct param_category_t* category, char* buf) {
         k_mutex_unlock(&param_mutex);
     }
     return rc;
-}
-
-int ParamGetAccess(const struct param_t* param) {
-    int access = -1;
-    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
-        if (param != NULL) {
-            access = param->access;
-        }
-        k_mutex_unlock(&param_mutex);
-    }
-    return access;
 }
 
 int ParamGetCurrentValueString(const struct param_t* param, char* buf) {
