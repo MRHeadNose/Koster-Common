@@ -132,11 +132,20 @@ bool ParamIsEnum(const struct param_t* param) {
     return is_enum;
 }
 
-unsigned int ParamCategoryGetNParams(const struct param_category_t* category) {
-    unsigned int ret_val = 0;
+int ParamCategoryGetNParams(const struct param_category_t* category, const unsigned int access_level) {
+    if (access_level >= PARAM_ACCESS_LEVELS || category == NULL) {
+        return -EINVAL;
+    }
+
+    return category->n_params[access_level];
+}
+
+int ParamCategoryGetTotalNParams(const struct param_category_t* category) {
+    int ret_val = -ENOENT;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
         if (category != NULL) {
-            ret_val = category->n_params;
+            // Highest access level contains all parameters
+            ret_val = category->n_params[PARAM_ACCESS_LEVELS - 1];
         }
         k_mutex_unlock(&param_mutex);
     }
@@ -146,10 +155,11 @@ unsigned int ParamCategoryGetNParams(const struct param_category_t* category) {
 int ParamCategoryGetParam(const struct param_category_t* category,
                           const struct param_t** param,
                           const unsigned int index) {
-    int rc = -1;
+    int rc = -EINVAL;
     if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {
         if (category != NULL) {
-            if (index < category->n_params) {
+            // Highest access level contains all parameters
+            if (index < category->n_params[PARAM_ACCESS_LEVELS - 1]) {
                 *param = category->params[index];
                 rc = 0;
             }
@@ -177,4 +187,46 @@ int ParamGetCurrentValueString(const struct param_t* param, char* buf) {
         k_mutex_unlock(&param_mutex);
     }
     return -1;
+}
+
+int ParamCategoryWalk(param_category_walk_cb_t cb, const unsigned int access_level, void* arg) {
+    if (access_level >= PARAM_ACCESS_LEVELS || cb == NULL) {
+        return -EINVAL;
+    }
+
+    const struct param_category_t* category;
+    for (unsigned int cat_i = 0; cat_i < PARAM_NUM_CATEGORIES; ++cat_i) {
+        if (ParamGetCategory(&category, cat_i) != 0) {
+            return -ENOENT;
+        }
+
+        if (ParamCategoryGetNParams(category, access_level) > 0) {
+            if (cb(category, arg) < 0) {
+                // Walk interrupted by callback return code
+                return 0;
+            }
+        }
+    }
+
+    return 0;
+}
+
+int ParamWalk(param_walk_cb_t cb, const struct param_category_t* category, const unsigned int access_level, void* arg) {
+    if (access_level >= PARAM_ACCESS_LEVELS || cb == NULL || category == NULL) {
+        return -EINVAL;
+    }
+
+    const struct param_t* parameter;
+    for (unsigned int par_i = 0; par_i < ParamCategoryGetNParams(category, access_level); ++par_i) {
+        if (ParamCategoryGetParam(category, &parameter, par_i) != 0) {
+            return -ENOENT;
+        }
+
+        if (cb(parameter, arg) < 0) {
+            // Walk interrupted by callback return code
+            return 0;
+        }
+    }
+
+    return 0;
 }

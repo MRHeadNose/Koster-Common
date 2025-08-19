@@ -20,7 +20,7 @@ struct param_t {
 struct param_category_t {
     int id;
     const char* name;
-    int n_params;
+    unsigned int n_params[PARAM_ACCESS_LEVELS];  // number of parameter per access level
     const struct param_t* params[PARAM_MAX_NUM_PARAMS_IN_CATEGORY];
 };
 

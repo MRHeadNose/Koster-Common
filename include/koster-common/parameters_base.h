@@ -120,12 +120,21 @@ int ParamGetCategory(const struct param_category_t** category, const unsigned in
 int ParamGetCategoryName(const struct param_category_t* category, char* buf);
 
 /**
- * Get number of parameters in category
+ * Get number of parameters in category at the specified access level
  *
- * @return the number of parameters in category
+ * @return the number of parameters in category, or < 0 on error
+ * @param category  pointer to the category
+ * @param access    access level
+ */
+int ParamCategoryGetNParams(const struct param_category_t* category, const unsigned int access_level);
+
+/**
+ * Get number of parameters in category, at all access levels
+ *
+ * @return the number of parameters in category, or < 0 on error
  * @param category  pointer to the category
  */
-unsigned int ParamCategoryGetNParams(const struct param_category_t* category);
+int ParamCategoryGetTotalNParams(const struct param_category_t* category);
 
 /**
  * Get a parameter from a category by alphabetical index
@@ -175,5 +184,50 @@ int ParamGetExponent(const struct param_t* param);
  * @param param  pointer to the parameter
  */
 int ParamSave(const struct param_t* param);
+
+/**
+ * @brief Callback function type for walking through categories
+ *
+ * This function is called for each entry during iteration in ParamCategoryWalk.
+ *
+ * @param[out] category  The category definition
+ *
+ * @return 0 to continue iteration, non-zero to stop.
+ */
+typedef int (*param_category_walk_cb_t)(const struct param_category_t* category, void* arg);
+
+/**
+ * @brief Walk through parameters categories in alphabetic order
+ *
+ * @param cb      callback called for each entry
+ * @param access  parameter access level
+ * @param arg     Pointer to user-defined data to be passed to the callback function.
+ *
+ * @return 0 on success, negative on error
+ */
+int ParamCategoryWalk(param_category_walk_cb_t cb, const unsigned int access_level, void* arg);
+
+/**
+ * @brief Callback function type for walking through parameter in a category
+ *
+ * This function is called for each entry during iteration in ParamWalk.
+ *
+ * @param[out] parameter  The parameter definition
+ *
+ * @return 0 to continue iteration, non-zero to stop.
+ */
+typedef int (*param_walk_cb_t)(const struct param_t* parameter, void* arg);
+
+/**
+ * @brief Walk through parameters in a categories in alphabetic order
+ *
+ * @param cb        callback called for each entry
+ * @param category  The category
+ * @param access    parameter access level
+ * @param arg       Pointer to user-defined data to be passed to the callback function.
+ *
+ * @return 0 on success, negative on error
+ */
+int ParamWalk(param_walk_cb_t cb, const struct param_category_t* category, const unsigned int access_level, void* arg);
 
 #endif
