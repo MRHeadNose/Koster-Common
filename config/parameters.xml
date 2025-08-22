@@ -5,19 +5,20 @@
     <AccessLevel Id="1" Name="Advanced"/>
     <AccessLevel Id="2" Name="Factory"/>
   </AccessLevels>
-  
+
   <Categories>
     <Category Id="0" Name="Factory setting" />
     <Category Id="1" Name="Language and units" />
     <Category Id="2" Name="Alarm" />
     <Category Id="3" Name="Radar" />
-    <Category Id="4" Name="Misc." />
-    <Category Id="5" Name="UI" />
-    <Category Id="6" Name="Date" />
-    <Category Id="7" Name="Time" />
-    <Category Id="8" Name="Access" />
+    <Category Id="4" Name="IRCam" />
+    <Category Id="5" Name="Misc." />
+    <Category Id="6" Name="UI" />
+    <Category Id="7" Name="Date" />
+    <Category Id="8" Name="Time" />
+    <Category Id="9" Name="Access" />
   </Categories>
-  
+
   <Enums>
     <Enum Name="machine_type_t">
       <EnumValue Name="SingleHeater" Value="0" />
@@ -79,23 +80,33 @@
       <EnumValue Name="Saturday" Value="5" />
       <EnumValue Name="Sunday" Value="6" />
     </Enum>
+    <Enum Name="dist_detect_type_t">
+      <EnumValue Name="Closest" Value="0" />
+      <EnumValue Name="Strongest" Value="1" />
+      <EnumValue Name="Weighted" Value="2" />
+    </Enum>
   </Enums>
 
   <Units>
     <Unit Id="0" Name="Celsius" />
     <Unit Id="1" Name="Meter" />
     <Unit Id="2" Name="pc." />
+    <Unit Id="3" Name="Watt" />
+    <Unit Id="4" Name="px" />
   </Units>
-  
+
   <Parameter Id="0" Category="Factory setting" Name="Machine type" Type="machine_type_t" AccessLevel="Factory" Description="" Default="Start_Production" />
   <Parameter Id="1" Category="Language and units" Name="Language" Type="language_t" AccessLevel="Advanced" Description="" Default="English" />
   <Parameter Id="3" Category="Alarm" Name="Process alarm" Type="yes_no_t" AccessLevel="Advanced" Description="Issue alarm if temperature is more than 'Process alarm temp'" Default="Yes" />
   <Parameter Id="49" Category="Alarm" Name="Process alarm temp" Type="uint8_t" Unit="Celsius" Min="5" Max="99" Exponent="0" AccessLevel="Advanced" Description="Temperature is displayed in this unit" Default="30" />
   <Parameter Id="4" Category="Language and units" Name="Temperature unit" Type="temperature_unit_t" AccessLevel="Advanced" Description="Temperature is displayed in this unit" Default="Celsius" />
   <Parameter Id="37" Category="Language and units" Name="Distance unit" Type="distance_unit_t" AccessLevel="Advanced" Description="Distance is displayed in this unit" Default="Centimeters" />
-  <Parameter Id="61" Category="Radar" Name="Radar Distance" Type="uint16_t" Min="2" Max="14" Exponent="-1" Unit="Meter" AccessLevel="Factory" Description="" Default="10" />
+  <Parameter Id="61" Category="Radar" Name="Radar Distance" Type="uint16_t" Min="2" Max="14" Exponent="-1" Unit="Meter" AccessLevel="Advanced" Description="" Default="10" />
+  <Parameter Id="62" Category="Radar" Name="Detection mode" Type="dist_detect_type_t" AccessLevel="Factory" Description="Radar distance detection method" Default="Closest" />
+  <Parameter Id="63" Category="IRCam" Name="Temp Pixels" Type="uint16_t" Min="1" Max="16" Exponent="0" Unit="px" AccessLevel="Advanced" Description="Number of pixels used for target temp calculation" Default="4" />
   <Parameter Id="11" Category="Misc." Name="Cass. T. Guard" Type="yes_no_t" AccessLevel="Factory" Description="" Default="Yes" />
   <Parameter Id="12" Category="Misc." Name="Cassettes" Type="uint8_t" Min="1" Max="4" Exponent="0" Unit="pc." AccessLevel="Factory" Description="" Default="2" />
+  <Parameter Id="13" Category="Misc." Name="Cassette power" Type="uint16_t" Unit="Watt" Min="500" Max="8000" Exponent="0" AccessLevel="Advanced" Description="Cassette power" Default="2000" />
   <Parameter Id="70" Category="UI" Name="Camera colormap" Type="color_map_t" AccessLevel="Basic" Description="" Default="Turbo" />
 
   <Parameter Id="71" Category="Date" Name="Year" Type="uint16_t" AccessLevel="Advanced" Description="Year (UTC)" Default="2025" Min="2025" Max="2200" Exponent="0" />
@@ -112,15 +123,15 @@
   <Parameter Id="36" Category="Access" Name="Advanced Pin" Type="uint16_t" AccessLevel="Advanced" Description="Pin code for Advanced access" Default="1523" Min="0" Max="9999" Exponent="0" />
   <Parameter Id="35" Category="Access" Name="Factory Pin" Type="uint16_t" AccessLevel="Factory" Description="Pin code for Factory access" Default="5780" Min="0" Max="9999" Exponent="0" />
   <Parameter Id="80" Category="Misc." Name="Cass. Select Mask" Type="uint8_t" Min="1" Max="16" Exponent="0" AccessLevel="Factory" Description="Bitwise cassette selectable mask. 0 = optional, 1 = one of these has to be selected." Default="1" />
-  
-  
+
+
   <!-- <Parameter ID="0" Category="" Name="" Type="" Min="" Max="" Unit="" Exponent="0" AccessLevel="" Description="" /> -->
-  
+
   <DefaultOverride MachineType="i5_1G5">
     <DefaultValue ParameterId="0" Value="i5_1G5" />
     <DefaultValue ParameterId="11" Value="No" />
     <DefaultValue ParameterId="12" Value="1" />
   </DefaultOverride>
 
-  
+
 </Parameters>
