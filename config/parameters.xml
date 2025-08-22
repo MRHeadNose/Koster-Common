@@ -111,6 +111,7 @@
   <Parameter Id="7" Category="Access" Name="Basic Pin" Type="uint16_t" AccessLevel="Advanced" Description="Pin code for Basic access" Default="0" Min="0" Max="9999" Exponent="0" />
   <Parameter Id="36" Category="Access" Name="Advanced Pin" Type="uint16_t" AccessLevel="Advanced" Description="Pin code for Advanced access" Default="1523" Min="0" Max="9999" Exponent="0" />
   <Parameter Id="35" Category="Access" Name="Factory Pin" Type="uint16_t" AccessLevel="Factory" Description="Pin code for Factory access" Default="5780" Min="0" Max="9999" Exponent="0" />
+  <Parameter Id="80" Category="Misc." Name="Cass. Select Mask" Type="uint8_t" Min="1" Max="4" Exponent="0" AccessLevel="Factory" Description="" Default="1" />
   
   
   <!-- <Parameter ID="0" Category="" Name="" Type="" Min="" Max="" Unit="" Exponent="0" AccessLevel="" Description="" /> -->
