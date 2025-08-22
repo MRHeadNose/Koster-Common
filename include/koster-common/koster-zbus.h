@@ -39,6 +39,8 @@ struct kzbus_req_laser_off_msg_t {};
 typedef enum {
     /** No program is running */
     kProgramStateIdle,
+    /** A program is starting */
+    kProgramStateStarting,
     /** A program is running */
     kProgramStateRunning,
     /** An error occured */
