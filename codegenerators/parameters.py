@@ -235,12 +235,7 @@ get_value_string_case = """
                 break;"""
 
 getter_definition = """{type} ParamGet{name}(){{
-    if (k_mutex_lock(&param_mutex, K_FOREVER) == 0) {{
-        int32_t ret = param_values_[{index}];
-        k_mutex_unlock(&param_mutex);
-        return ({type})ret;
-    }}
-    return ({type})0;
+    return ({type})param_values_[{index}];
 }}"""
 
 setter_definition = """int ParamSet{name}(const {type} value) {{
