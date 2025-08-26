@@ -11,12 +11,11 @@
     <Category Id="1" Name="Language and units" />
     <Category Id="2" Name="Alarm" />
     <Category Id="3" Name="Radar" />
-    <Category Id="4" Name="IRCam" />
+    <Category Id="4" Name="IR Camera" />
     <Category Id="5" Name="Misc." />
-    <Category Id="6" Name="UI" />
-    <Category Id="7" Name="Date" />
-    <Category Id="8" Name="Time" />
-    <Category Id="9" Name="Access" />
+    <Category Id="6" Name="Date" />
+    <Category Id="7" Name="Time" />
+    <Category Id="8" Name="Access" />
   </Categories>
 
   <Enums>
@@ -93,6 +92,7 @@
     <Unit Id="2" Name="pc." />
     <Unit Id="3" Name="Watt" />
     <Unit Id="4" Name="px" />
+    <Unit Id="5" Name="kW" />
   </Units>
 
   <Parameter Id="0" Category="Factory setting" Name="Machine type" Type="machine_type_t" AccessLevel="Factory" Description="" Default="Start_Production" />
@@ -102,12 +102,12 @@
   <Parameter Id="4" Category="Language and units" Name="Temperature unit" Type="temperature_unit_t" AccessLevel="Advanced" Description="Temperature is displayed in this unit" Default="Celsius" />
   <Parameter Id="37" Category="Language and units" Name="Distance unit" Type="distance_unit_t" AccessLevel="Advanced" Description="Distance is displayed in this unit" Default="Centimeters" />
   <Parameter Id="61" Category="Radar" Name="Radar Distance" Type="uint16_t" Min="2" Max="14" Exponent="-1" Unit="Meter" AccessLevel="Advanced" Description="" Default="10" />
-  <Parameter Id="62" Category="Radar" Name="Detection mode" Type="dist_detect_type_t" AccessLevel="Factory" Description="Radar distance detection method" Default="Closest" />
-  <Parameter Id="63" Category="IRCam" Name="Temp Pixels" Type="uint16_t" Min="1" Max="16" Exponent="0" Unit="px" AccessLevel="Advanced" Description="Number of pixels used for target temp calculation" Default="4" />
+  <Parameter Id="63" Category="Radar" Name="Detection mode" Type="dist_detect_type_t" AccessLevel="Factory" Description="Radar distance detection method" Default="Closest" />
+  <Parameter Id="69" Category="IR Camera" Name="Temp Pixels" Type="uint16_t" Min="1" Max="16" Exponent="0" Unit="px" AccessLevel="Advanced" Description="Number of pixels used for target temp calculation" Default="4" />
   <Parameter Id="11" Category="Misc." Name="Cass. T. Guard" Type="yes_no_t" AccessLevel="Factory" Description="" Default="Yes" />
   <Parameter Id="12" Category="Misc." Name="Cassettes" Type="uint8_t" Min="1" Max="4" Exponent="0" Unit="pc." AccessLevel="Factory" Description="" Default="2" />
-  <Parameter Id="13" Category="Misc." Name="Cassette power" Type="uint16_t" Unit="Watt" Min="500" Max="8000" Exponent="0" AccessLevel="Advanced" Description="Cassette power" Default="2000" />
-  <Parameter Id="70" Category="UI" Name="Camera colormap" Type="color_map_t" AccessLevel="Basic" Description="" Default="Turbo" />
+  <Parameter Id="50" Category="Misc." Name="Total Power" Type="uint16_t" Unit="kW" Min="1" Max="32" Exponent="0" AccessLevel="Advanced" Description="Total power for machine" Default="6" />
+  <Parameter Id="70" Category="IR Camera" Name="Camera colormap" Type="color_map_t" AccessLevel="Basic" Description="" Default="Turbo" />
 
   <Parameter Id="71" Category="Date" Name="Year" Type="uint16_t" AccessLevel="Advanced" Description="Year (UTC)" Default="2025" Min="2025" Max="2200" Exponent="0" />
   <Parameter Id="72" Category="Date" Name="Month" Type="uint8_t" AccessLevel="Advanced" Description="Month (UTC)" Default="7" Min="1" Max="12" Exponent="0" />
